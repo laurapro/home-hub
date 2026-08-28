@@ -250,6 +250,16 @@ function HomePage() {
           </Section>
         )}
 
+        {needsYou.length > 0 && (
+          <Section title="Needs you">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {needsYou.map((item, i) => (
+                <AttentionCard key={item.entity_id ?? `needs-${i}`} item={item} />
+              ))}
+            </div>
+          </Section>
+        )}
+
         {tonight.length + tomorrow.length > 0 && (
           <Section title="Meals">
             <div className="grid gap-3 sm:grid-cols-2">
