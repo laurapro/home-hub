@@ -67,9 +67,7 @@ function Card({ children, tone }: { children: React.ReactNode; tone?: string }) 
       : tone === "due"
         ? "border-l-4 border-l-warning"
         : "";
-  return (
-    <div className={`rounded-xl border bg-card p-4 shadow-sm ${border}`}>{children}</div>
-  );
+  return <div className={`rounded-xl border bg-card p-4 shadow-sm ${border}`}>{children}</div>;
 }
 
 function AttentionCard({ item }: { item: AttentionItem }) {
