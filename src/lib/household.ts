@@ -42,26 +42,33 @@ export function useHouseholdMembership() {
   });
 }
 
+/** Lightweight periodic refresh for the Home read RPCs (~2 minutes). */
+const HOME_REFETCH_INTERVAL_MS = 2 * 60 * 1000;
+
 export function useHomeData(enabled: boolean) {
   const timeline = useQuery({
     queryKey: ["today-timeline", HOUSEHOLD_SLUG],
     queryFn: () => callRpc<TimelineItem>("get_lovable_today_timeline"),
     enabled,
+    refetchInterval: HOME_REFETCH_INTERVAL_MS,
   });
   const attention = useQuery({
     queryKey: ["household-attention", HOUSEHOLD_SLUG],
     queryFn: () => callRpc<AttentionItem>("get_lovable_household_attention"),
     enabled,
+    refetchInterval: HOME_REFETCH_INTERVAL_MS,
   });
   const meals = useQuery({
     queryKey: ["home-meals", HOUSEHOLD_SLUG],
     queryFn: () => callRpc<MealItem>("get_lovable_home_meals"),
     enabled,
+    refetchInterval: HOME_REFETCH_INTERVAL_MS,
   });
   const shopping = useQuery({
     queryKey: ["shopping-summary", HOUSEHOLD_SLUG],
     queryFn: () => callRpc<ShoppingSummary>("get_lovable_shopping_summary"),
     enabled,
+    refetchInterval: HOME_REFETCH_INTERVAL_MS,
   });
 
   const queries = [timeline, attention, meals, shopping];

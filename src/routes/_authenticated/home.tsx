@@ -221,16 +221,6 @@ function HomePage() {
 
     body = (
       <div className="space-y-8">
-        {needsYou.length > 0 && (
-          <Section title="Needs you">
-            <div className="grid gap-3 sm:grid-cols-2">
-              {needsYou.map((item, i) => (
-                <AttentionCard key={item.entity_id ?? `needs-${i}`} item={item} />
-              ))}
-            </div>
-          </Section>
-        )}
-
         {data.timeline.length > 0 && (
           <Section title="Today">
             <div className="space-y-2">
