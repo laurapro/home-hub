@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 export const HOUSEHOLD_SLUG = "home";
+export const HOUSEHOLD_TIMEZONE = "America/Chicago";
 
 type Fns = Database["public"]["Functions"];
 export type TimelineItem = Fns["get_lovable_today_timeline"]["Returns"][number];
@@ -10,106 +11,114 @@ export type AttentionItem = Fns["get_lovable_household_attention"]["Returns"][nu
 export type MealItem = Fns["get_lovable_home_meals"]["Returns"][number];
 export type ShoppingSummary = Fns["get_lovable_shopping_summary"]["Returns"][number];
 
-export type HouseholdAccessError = { kind: "no-access" } | { kind: "error"; message: string };
+type RpcName =
+  | "get_lovable_today_timeline"
+  | "get_lovable_household_attention"
+  | "get_lovable_home_meals"
+  | "get_lovable_shopping_summary";
+
+async function callRpc<T>(fn: RpcName): Promise<T[]> {
+  const { data, error } = await supabase.rpc(fn, { p_household_slug: HOUSEHOLD_SLUG });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as T[];
+}
 
 /**
- * Supabase surfaces "member of no household / not authorized for this slug"
- * as a raised exception or a permission error from the RPC.
+ * Authorization is decided by an RLS-protected SELECT on household_memberships,
+ * never by whether the read RPCs happened to return rows.
  */
-function classify(error: { message?: string; code?: string } | null): HouseholdAccessError | null {
-  if (!error) return null;
-  const message = error.message ?? "Unknown error";
-  const normalized = message.toLowerCase();
-  if (
-    normalized.includes("not authorized") ||
-    normalized.includes("not a member") ||
-    normalized.includes("permission denied") ||
-    normalized.includes("forbidden") ||
-    normalized.includes("household not found") ||
-    error.code === "42501" ||
-    error.code === "PGRST301"
-  ) {
-    return { kind: "no-access" };
-  }
-  return { kind: "error", message };
+export function useHouseholdMembership() {
+  return useQuery({
+    queryKey: ["household-membership", HOUSEHOLD_SLUG],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("household_memberships")
+        .select("household_id, role, households!inner(slug, name, timezone)")
+        .eq("households.slug", HOUSEHOLD_SLUG)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      return data;
+    },
+  });
 }
 
-async function callRpc<T>(
-  fn:
-    | "get_lovable_today_timeline"
-    | "get_lovable_household_attention"
-    | "get_lovable_home_meals"
-    | "get_lovable_shopping_summary",
-): Promise<{ rows: T[]; failure: HouseholdAccessError | null }> {
-  const { data, error } = await supabase.rpc(fn, { p_household_slug: HOUSEHOLD_SLUG });
-  const failure = classify(error);
-  return { rows: (data ?? []) as T[], failure };
-}
-
-export function useHomeData() {
+export function useHomeData(enabled: boolean) {
   const timeline = useQuery({
     queryKey: ["today-timeline", HOUSEHOLD_SLUG],
     queryFn: () => callRpc<TimelineItem>("get_lovable_today_timeline"),
+    enabled,
   });
   const attention = useQuery({
     queryKey: ["household-attention", HOUSEHOLD_SLUG],
     queryFn: () => callRpc<AttentionItem>("get_lovable_household_attention"),
+    enabled,
   });
   const meals = useQuery({
     queryKey: ["home-meals", HOUSEHOLD_SLUG],
     queryFn: () => callRpc<MealItem>("get_lovable_home_meals"),
+    enabled,
   });
   const shopping = useQuery({
     queryKey: ["shopping-summary", HOUSEHOLD_SLUG],
     queryFn: () => callRpc<ShoppingSummary>("get_lovable_shopping_summary"),
+    enabled,
   });
 
   const queries = [timeline, attention, meals, shopping];
-  const isLoading = queries.some((q) => q.isPending);
-  const failures = queries
-    .map((q) => q.data?.failure ?? (q.error ? classify(q.error as Error) : null))
-    .filter(Boolean) as HouseholdAccessError[];
-
-  const noAccess = failures.length > 0 && failures.every((f) => f.kind === "no-access");
-  const hardError = failures.find((f) => f.kind === "error") as
-    | { kind: "error"; message: string }
-    | undefined;
 
   return {
-    isLoading,
-    noAccess,
-    errorMessage: hardError?.message ?? null,
-    timeline: timeline.data?.rows ?? [],
-    attention: attention.data?.rows ?? [],
-    meals: meals.data?.rows ?? [],
-    shopping: shopping.data?.rows ?? [],
-    refetchAll: () => queries.forEach((q) => void q.refetch()),
+    isLoading: enabled && queries.some((q) => q.isPending),
+    errorMessage: (queries.find((q) => q.error)?.error as Error | undefined)?.message ?? null,
+    timeline: timeline.data ?? [],
+    attention: attention.data ?? [],
+    meals: meals.data ?? [],
+    shopping: shopping.data ?? [],
   };
 }
 
-const CRITICAL_SEVERITIES = new Set(["critical", "urgent", "overdue", "high", "due"]);
-
+/** Canonical severities only — no aliases, no time heuristics. */
 export function isNeedsYou(item: AttentionItem): boolean {
-  const severity = (item.severity ?? "").toLowerCase();
-  if (CRITICAL_SEVERITIES.has(severity)) return true;
-  if (!item.due_at) return false;
-  const due = new Date(item.due_at).getTime();
-  if (Number.isNaN(due)) return false;
-  return due <= Date.now() + 12 * 60 * 60 * 1000;
+  return item.severity === "critical" || item.severity === "due";
 }
 
-export function severityTone(severity: string | null): "critical" | "warning" | "calm" {
-  const value = (severity ?? "").toLowerCase();
-  if (CRITICAL_SEVERITIES.has(value)) return "critical";
-  if (value === "warning" || value === "soon" || value === "medium") return "warning";
+export function isUpcoming(item: AttentionItem): boolean {
+  return item.severity === "upcoming";
+}
+
+export function severityTone(severity: string | null): "critical" | "due" | "calm" {
+  if (severity === "critical") return "critical";
+  if (severity === "due") return "due";
   return "calm";
+}
+
+function dateKey(offsetDays: number): string {
+  const now = new Date();
+  now.setDate(now.getDate() + offsetDays);
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: HOUSEHOLD_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+
+export function todayKey() {
+  return dateKey(0);
+}
+
+export function tomorrowKey() {
+  return dateKey(1);
 }
 
 export function formatTime(value: string | null): string | null {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return date.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: HOUSEHOLD_TIMEZONE,
+  });
 }
 
 export function formatDayTime(value: string | null): string | null {
@@ -120,5 +129,13 @@ export function formatDayTime(value: string | null): string | null {
     weekday: "short",
     hour: "numeric",
     minute: "2-digit",
+    timeZone: HOUSEHOLD_TIMEZONE,
   });
+}
+
+export function formatDay(value: string | null): string | null {
+  if (!value) return null;
+  const date = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
 }
