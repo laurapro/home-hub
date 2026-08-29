@@ -169,7 +169,7 @@ function HomePage() {
   const tomorrow = data.meals.filter((m) => m.planned_for === tomorrowKey());
 
   const header = (
-    <header className="flex items-center justify-between gap-4">
+    <header className="flex flex-wrap items-start justify-between gap-4">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
           Today at home
@@ -183,11 +183,20 @@ function HomePage() {
           })}
         </p>
       </div>
-      <Button variant="outline" size="sm" onClick={handleSignOut}>
-        Sign out
-      </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        {isMember && (
+          <>
+            <PlanMealDialog enabled={isMember} />
+            <CorrectInventoryDialog enabled={isMember} />
+          </>
+        )}
+        <Button variant="ghost" size="sm" className="h-10" onClick={handleSignOut}>
+          Sign out
+        </Button>
+      </div>
     </header>
   );
+
 
   let body: React.ReactNode;
 
