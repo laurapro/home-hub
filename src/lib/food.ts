@@ -72,10 +72,14 @@ export function useFoodAction<TArgs>(
     mutationFn: run,
     onSuccess: async (result) => {
       const applied =
-        result && typeof result === "object" && (result as Record<string, unknown>)["already_applied"];
+        result &&
+        typeof result === "object" &&
+        (result as Record<string, unknown>)["already_applied"];
       toast.success(applied ? "Already up to date" : successMessage);
       await Promise.all(
-        REFRESH_KEYS.map((key) => queryClient.invalidateQueries({ queryKey: [key, HOUSEHOLD_SLUG] })),
+        REFRESH_KEYS.map((key) =>
+          queryClient.invalidateQueries({ queryKey: [key, HOUSEHOLD_SLUG] }),
+        ),
       );
     },
     onError: (error: Error) => toast.error(error.message),

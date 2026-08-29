@@ -20,7 +20,6 @@ import {
   type MealItem,
 } from "@/lib/household";
 
-
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
     meta: [
@@ -142,7 +141,6 @@ function MealCard({ label, meals }: { label: string; meals: MealItem[] }) {
             {meal.notes && <p className="mt-2 text-sm text-muted-foreground">{meal.notes}</p>}
             <MealActions meal={meal} />
           </div>
-
         ))}
       </div>
     </Card>
@@ -196,7 +194,6 @@ function HomePage() {
       </div>
     </header>
   );
-
 
   let body: React.ReactNode;
 
