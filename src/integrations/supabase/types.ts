@@ -5105,6 +5105,35 @@ export type Database = {
         Args: { p_household_slug?: string }
         Returns: Json
       }
+      get_lovable_food_inventory: {
+        Args: { p_household_slug?: string }
+        Returns: {
+          confidence: number
+          inventory_id: string
+          item_id: string
+          item_name: string
+          last_confirmed_at: string
+          location_id: string
+          location_name: string
+          location_type: string
+          meals_remaining: number
+          opened_at: string
+          quantity: number
+          quantity_unit: string
+          status: string
+          tracking_mode: string
+        }[]
+      }
+      get_lovable_food_recipes: {
+        Args: { p_household_slug?: string }
+        Returns: {
+          cook_minutes: number
+          name: string
+          prep_minutes: number
+          recipe_id: string
+          servings: number
+        }[]
+      }
       get_lovable_home_meals: {
         Args: { p_household_slug?: string }
         Returns: {
@@ -5199,6 +5228,44 @@ export type Database = {
         }
       }
       get_pets_attention: { Args: { p_household_slug?: string }; Returns: Json }
+      lovable_add_planned_meal_item_to_shopping: {
+        Args: { p_item_id: string; p_planned_meal_id: string }
+        Returns: Json
+      }
+      lovable_cancel_food_meal: {
+        Args: { p_planned_meal_id: string }
+        Returns: Json
+      }
+      lovable_complete_food_meal: {
+        Args: { p_planned_meal_id: string; p_portions_made?: number }
+        Returns: Json
+      }
+      lovable_complete_food_thaw: {
+        Args: { p_item_id: string; p_planned_meal_id: string }
+        Returns: Json
+      }
+      lovable_correct_food_inventory: {
+        Args: {
+          p_inventory_id: string
+          p_mark_opened?: boolean
+          p_meals_remaining?: number
+          p_quantity?: number
+          p_quantity_unit?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
+      lovable_plan_food_meal: {
+        Args: {
+          p_household_slug: string
+          p_meal_slot?: string
+          p_notes?: string
+          p_plan_type?: string
+          p_planned_for: string
+          p_recipe_id?: string
+        }
+        Returns: Json
+      }
       mark_pet_medication_given: {
         Args: {
           p_actor_ref?: string
