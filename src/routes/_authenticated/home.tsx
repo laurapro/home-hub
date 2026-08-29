@@ -140,7 +140,9 @@ function MealCard({ label, meals }: { label: string; meals: MealItem[] }) {
               )}
             </div>
             {meal.notes && <p className="mt-2 text-sm text-muted-foreground">{meal.notes}</p>}
+            <MealActions meal={meal} />
           </div>
+
         ))}
       </div>
     </Card>
