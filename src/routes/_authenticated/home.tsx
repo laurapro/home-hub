@@ -2,6 +2,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { PlanMealDialog } from "@/components/food/PlanMealDialog";
+import { CorrectInventoryDialog } from "@/components/food/CorrectInventoryDialog";
+import { MealActions } from "@/components/food/MealActions";
 import {
   formatDay,
   formatDayTime,
@@ -16,6 +19,7 @@ import {
   type AttentionItem,
   type MealItem,
 } from "@/lib/household";
+
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
