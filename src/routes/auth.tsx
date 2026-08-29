@@ -10,7 +10,10 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in — Household OS" },
-      { name: "description", content: "Sign in to Household OS to see today's plan for your home." },
+      {
+        name: "description",
+        content: "Sign in to Household OS to see today's plan for your home.",
+      },
       { property: "og:title", content: "Sign in — Household OS" },
       {
         property: "og:description",
