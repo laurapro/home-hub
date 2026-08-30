@@ -108,11 +108,4 @@ export const addPlannedMealItemToShopping = (
 ) => rpc("lovable_add_planned_meal_item_to_shopping", args);
 
 export const MEAL_SLOTS = ["breakfast", "lunch", "dinner", "snack"] as const;
-export const INVENTORY_STATUSES = [
-  "available",
-  "low",
-  "out",
-  "opened",
-  "expired",
-  "unknown",
-] as const;
+export const INVENTORY_STATUSES = ["plenty", "some", "low", "out", "unknown"] as const;
