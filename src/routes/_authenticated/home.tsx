@@ -100,7 +100,7 @@ function Card({
 function AttentionCard({ item }: { item: AttentionItem }) {
   const tone = severityTone(item.severity);
   return (
-    <Card tone={tone} interactive={true} showChevron={true}>
+    <Card tone={tone}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-medium text-foreground">{item.title ?? item.attention_type}</p>
         {item.due_at && (
@@ -264,11 +264,7 @@ function HomePage() {
               {data.timeline.map((item, i) => {
                 const informational = item.item_type !== "calendar_event";
                 return (
-                  <Card
-                    key={item.entity_id ?? `timeline-${i}`}
-                    interactive={true}
-                    showChevron={!informational}
-                  >
+                  <Card key={item.entity_id ?? `timeline-${i}`}>
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
                       <p className="font-medium text-foreground">{item.title}</p>
                       <span className="text-sm tabular-nums text-muted-foreground">
@@ -314,7 +310,7 @@ function HomePage() {
           <Section title="Shopping">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {data.shopping.map((store, i) => (
-                <Card key={store.store_name ?? `store-${i}`} interactive={true} showChevron={true}>
+                <Card key={store.store_name ?? `store-${i}`}>
                   <p className="font-medium text-foreground">{store.store_name ?? "Store"}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {store.item_count ?? 0} item{store.item_count === 1 ? "" : "s"}
