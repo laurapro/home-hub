@@ -40,9 +40,9 @@ export function MealActions({ meal }: { meal: MealItem }) {
   const busy = complete.isPending || cancel.isPending;
 
   return (
-    <div className="mt-3 space-y-2">
+    <div className="mt-3 space-y-3">
       {thawItems.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {thawItems.map((item) => (
             <Button
               key={`thaw-${item.item_id}`}
@@ -61,7 +61,7 @@ export function MealActions({ meal }: { meal: MealItem }) {
       )}
 
       {missingItems.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {missingItems.map((item) => (
             <Button
               key={`missing-${item.item_id}`}
@@ -79,7 +79,7 @@ export function MealActions({ meal }: { meal: MealItem }) {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2 pt-1">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <Button size="sm" className="h-10" disabled={busy} onClick={() => setConfirm("complete")}>
           Complete meal
         </Button>
@@ -106,10 +106,13 @@ export function MealActions({ meal }: { meal: MealItem }) {
                 : "Portions will use the recipe servings recorded in the household record."}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Keep as is</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-3">
+            <AlertDialogCancel disabled={busy} className="h-10 sm:h-auto">
+              Keep as is
+            </AlertDialogCancel>
             <AlertDialogAction
               disabled={busy}
+              className="h-10 sm:h-auto"
               onClick={(e) => {
                 e.preventDefault();
                 const action = confirm;

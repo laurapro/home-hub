@@ -77,11 +77,12 @@ export function PlanMealDialog({ enabled }: { enabled: boolean }) {
               value={plannedFor}
               onChange={(e) => setPlannedFor(e.target.value)}
             />
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
+                className="h-10"
                 onClick={() => setPlannedFor(todayKey())}
               >
                 Today
@@ -90,6 +91,7 @@ export function PlanMealDialog({ enabled }: { enabled: boolean }) {
                 type="button"
                 variant="outline"
                 size="sm"
+                className="h-10"
                 onClick={() => setPlannedFor(tomorrowKey())}
               >
                 Tomorrow
