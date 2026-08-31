@@ -284,7 +284,7 @@ function HomePage() {
           </Section>
         )}
 
-        {(data.shopping.length > 0 || isMember) && (
+        {data.shopping.length > 0 && (
           <Section title="Shopping">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {data.shopping.map((store, i) => (
