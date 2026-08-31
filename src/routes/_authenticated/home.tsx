@@ -287,7 +287,25 @@ function HomePage() {
         {data.shopping.length > 0 && (
           <Section title="Shopping">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-...
+              {data.shopping.map((store, i) => (
+                <Card key={store.store_name ?? `store-${i}`}>
+                  <p className="font-medium text-foreground">{store.store_name ?? "Store"}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {store.item_count ?? 0} item{store.item_count === 1 ? "" : "s"}
+                    {store.urgent_count ? ` · ${store.urgent_count} urgent` : ""}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                    {store.next_needed_by && (
+                      <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">
+                        needed by {formatDay(store.next_needed_by) ?? store.next_needed_by}
+                      </span>
+                    )}
+                    {store.dog_food_included && (
+                      <span className="rounded-full bg-accent px-2.5 py-1 text-accent-foreground">
+                        dog food
+                      </span>
+                    )}
+                  </div>
                 </Card>
               ))}
             </div>
