@@ -21,7 +21,13 @@ const STATUS_LABELS: Record<string, string> = {
   blocked: "Blocked",
 };
 
-export function ProjectsSection({ enabled }: { enabled: boolean }) {
+export function ProjectsSection({
+  enabled,
+  hasAttention,
+}: {
+  enabled: boolean;
+  hasAttention: boolean;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [completing, setCompleting] = useState<Project | null>(null);
 
@@ -30,14 +36,19 @@ export function ProjectsSection({ enabled }: { enabled: boolean }) {
 
   const list = projects.data ?? [];
 
-  if (!enabled) return null;
-  if (projects.isPending) return null;
-  if (projects.error) {
-    return <p className="text-sm text-critical">{(projects.error as Error).message}</p>;
-  }
-  if (list.length === 0) return null;
+  if (!enabled || projects.isPending) return null;
+  if (!projects.error && list.length === 0 && !hasAttention) return null;
 
   return (
+    <section className="space-y-3">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        Projects
+      </h2>
+      {projects.error ? (
+        <p className="text-sm text-critical">{(projects.error as Error).message}</p>
+      ) : list.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No active projects.</p>
+      ) : (
     <div className="space-y-3">
       {list.length > 2 && (
         <Button
