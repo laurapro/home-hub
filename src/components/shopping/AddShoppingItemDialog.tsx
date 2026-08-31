@@ -18,12 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  SHOPPING_PRIORITIES,
-  addShoppingItem,
-  useShoppingAction,
-  useStores,
-} from "@/lib/shopping";
+import { SHOPPING_PRIORITIES, addShoppingItem, useShoppingAction, useStores } from "@/lib/shopping";
 import { HOUSEHOLD_SLUG } from "@/lib/household";
 
 const NO_STORE = "__none__";
