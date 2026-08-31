@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { PlanMealDialog } from "@/components/food/PlanMealDialog";
@@ -21,6 +22,7 @@ import {
   type AttentionItem,
   type MealItem,
 } from "@/lib/household";
+import { getInteractiveCardClasses } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
@@ -65,20 +67,40 @@ function Section({
   );
 }
 
-function Card({ children, tone }: { children: React.ReactNode; tone?: string }) {
+function Card({
+  children,
+  tone,
+  interactive = false,
+  showChevron = false,
+}: {
+  children: React.ReactNode;
+  tone?: string;
+  interactive?: boolean;
+  showChevron?: boolean;
+}) {
   const border =
     tone === "critical"
       ? "border-l-4 border-l-critical"
       : tone === "due"
         ? "border-l-4 border-l-warning"
         : "";
-  return <div className={`rounded-xl border bg-card p-4 shadow-sm ${border}`}>{children}</div>;
+  const interactiveClasses = interactive ? getInteractiveCardClasses() : "";
+  return (
+    <div className={`rounded-xl border bg-card p-4 shadow-sm ${border} ${interactiveClasses}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1">{children}</div>
+        {interactive && showChevron && (
+          <ChevronRight className="mt-0.5 size-5 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+        )}
+      </div>
+    </div>
+  );
 }
 
 function AttentionCard({ item }: { item: AttentionItem }) {
   const tone = severityTone(item.severity);
   return (
-    <Card tone={tone}>
+    <Card tone={tone} interactive={true} showChevron={true}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-medium text-foreground">{item.title ?? item.attention_type}</p>
         {item.due_at && (
@@ -242,7 +264,11 @@ function HomePage() {
               {data.timeline.map((item, i) => {
                 const informational = item.item_type !== "calendar_event";
                 return (
-                  <Card key={item.entity_id ?? `timeline-${i}`}>
+                  <Card
+                    key={item.entity_id ?? `timeline-${i}`}
+                    interactive={true}
+                    showChevron={!informational}
+                  >
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
                       <p className="font-medium text-foreground">{item.title}</p>
                       <span className="text-sm tabular-nums text-muted-foreground">
@@ -288,7 +314,7 @@ function HomePage() {
           <Section title="Shopping">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {data.shopping.map((store, i) => (
-                <Card key={store.store_name ?? `store-${i}`}>
+                <Card key={store.store_name ?? `store-${i}`} interactive={true} showChevron={true}>
                   <p className="font-medium text-foreground">{store.store_name ?? "Store"}</p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {store.item_count ?? 0} item{store.item_count === 1 ? "" : "s"}
