@@ -5189,6 +5189,23 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_lovable_projects: {
+        Args: { p_household_slug?: string; p_include_complete?: boolean }
+        Returns: {
+          completed_at: string
+          created_at: string
+          follow_up_at: string
+          id: string
+          last_action: string
+          last_action_at: string
+          name: string
+          next_action: string
+          notes: string
+          status: string
+          updated_at: string
+          waiting_on: string
+        }[]
+      }
       get_lovable_shopping_items: {
         Args: { p_household_slug?: string; p_include_completed?: boolean }
         Returns: {
@@ -5308,6 +5325,36 @@ export type Database = {
         Args: { p_item_id: string; p_planned_meal_id: string }
         Returns: Json
       }
+      lovable_complete_project: {
+        Args: {
+          p_confirm: boolean
+          p_household_slug: string
+          p_project_id: string
+        }
+        Returns: {
+          completed_at: string | null
+          created_at: string
+          external_thread_ref: string | null
+          follow_up_at: string | null
+          household_id: string
+          id: string
+          last_action: string | null
+          last_action_at: string | null
+          name: string
+          next_action: string | null
+          notes: string | null
+          owner_person_id: string | null
+          status: string
+          updated_at: string
+          waiting_on: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "projects"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       lovable_complete_shopping_item: {
         Args: { p_household_slug: string; p_shopping_item_id: string }
         Returns: {
@@ -5345,6 +5392,40 @@ export type Database = {
           p_status?: string
         }
         Returns: Json
+      }
+      lovable_create_project: {
+        Args: {
+          p_follow_up_at?: string
+          p_household_slug: string
+          p_name: string
+          p_next_action?: string
+          p_notes?: string
+          p_status?: string
+          p_waiting_on?: string
+        }
+        Returns: {
+          completed_at: string | null
+          created_at: string
+          external_thread_ref: string | null
+          follow_up_at: string | null
+          household_id: string
+          id: string
+          last_action: string | null
+          last_action_at: string | null
+          name: string
+          next_action: string | null
+          notes: string | null
+          owner_person_id: string | null
+          status: string
+          updated_at: string
+          waiting_on: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "projects"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       lovable_plan_food_meal: {
         Args: {
@@ -5407,6 +5488,42 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "shopping_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      lovable_update_project: {
+        Args: {
+          p_follow_up_at?: string
+          p_household_slug: string
+          p_last_action?: string
+          p_name: string
+          p_next_action?: string
+          p_notes?: string
+          p_project_id: string
+          p_status: string
+          p_waiting_on?: string
+        }
+        Returns: {
+          completed_at: string | null
+          created_at: string
+          external_thread_ref: string | null
+          follow_up_at: string | null
+          household_id: string
+          id: string
+          last_action: string | null
+          last_action_at: string | null
+          name: string
+          next_action: string | null
+          notes: string | null
+          owner_person_id: string | null
+          status: string
+          updated_at: string
+          waiting_on: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "projects"
           isOneToOne: true
           isSetofReturn: false
         }
