@@ -24,13 +24,7 @@ import { HOUSEHOLD_SLUG, formatDay } from "@/lib/household";
 
 type PendingAction = { kind: "complete" | "skip"; item: ShoppingItem } | null;
 
-function ItemRow({
-  item,
-  children,
-}: {
-  item: ShoppingItem;
-  children?: React.ReactNode;
-}) {
+function ItemRow({ item, children }: { item: ShoppingItem; children?: React.ReactNode }) {
   const label = item.item_name ?? item.custom_name ?? "Item";
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-3">
@@ -96,9 +90,7 @@ export function ShoppingItemsList({ enabled }: { enabled: boolean }) {
       {expanded && (
         <div className="space-y-4">
           {items.isPending && <p className="text-sm text-muted-foreground">Loading items…</p>}
-          {items.error && (
-            <p className="text-sm text-critical">{(items.error as Error).message}</p>
-          )}
+          {items.error && <p className="text-sm text-critical">{(items.error as Error).message}</p>}
 
           {!items.isPending && !items.error && (
             <>
