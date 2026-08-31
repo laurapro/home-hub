@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { PlanMealDialog } from "@/components/food/PlanMealDialog";
 import { CorrectInventoryDialog } from "@/components/food/CorrectInventoryDialog";
 import { MealActions } from "@/components/food/MealActions";
+import { AddShoppingItemDialog } from "@/components/shopping/AddShoppingItemDialog";
+import { ShoppingItemsList } from "@/components/shopping/ShoppingItemsList";
 import {
   formatDay,
   formatDayTime,
@@ -186,6 +188,7 @@ function HomePage() {
           <>
             <PlanMealDialog enabled={isMember} />
             <CorrectInventoryDialog enabled={isMember} />
+            <AddShoppingItemDialog enabled={isMember} />
           </>
         )}
         <Button variant="ghost" size="sm" className="h-10" onClick={handleSignOut}>
@@ -306,6 +309,7 @@ function HomePage() {
                 </Card>
               ))}
             </div>
+            <ShoppingItemsList enabled={isMember} />
           </Section>
         )}
 

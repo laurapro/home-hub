@@ -5189,6 +5189,28 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_lovable_shopping_items: {
+        Args: { p_household_slug?: string; p_include_completed?: boolean }
+        Returns: {
+          created_at: string
+          custom_name: string
+          household_id: string
+          id: string
+          item_id: string
+          item_name: string
+          needed_by: string
+          priority: string
+          purchased_at: string
+          quantity: number
+          reason: string
+          source: string
+          status: string
+          store_id: string
+          store_name: string
+          unit: string
+          updated_at: string
+        }[]
+      }
       get_lovable_shopping_summary: {
         Args: { p_household_slug?: string }
         Returns: {
@@ -5205,6 +5227,14 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_lovable_stores: {
+        Args: { p_household_slug?: string }
+        Returns: {
+          id: string
+          name: string
+          store_type: string
+        }[]
       }
       get_lovable_today_timeline: {
         Args: { p_household_slug?: string }
@@ -5232,6 +5262,40 @@ export type Database = {
         Args: { p_item_id: string; p_planned_meal_id: string }
         Returns: Json
       }
+      lovable_add_shopping_item: {
+        Args: {
+          p_household_slug: string
+          p_name: string
+          p_priority?: string
+          p_quantity?: number
+          p_store_id?: string
+          p_unit?: string
+        }
+        Returns: {
+          created_at: string
+          custom_name: string | null
+          household_id: string
+          id: string
+          item_id: string | null
+          needed_by: string | null
+          priority: string
+          purchase_id: string | null
+          purchased_at: string | null
+          quantity: number | null
+          reason: string | null
+          source: string | null
+          status: string
+          store_id: string | null
+          unit: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "shopping_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       lovable_cancel_food_meal: {
         Args: { p_planned_meal_id: string }
         Returns: Json
@@ -5243,6 +5307,33 @@ export type Database = {
       lovable_complete_food_thaw: {
         Args: { p_item_id: string; p_planned_meal_id: string }
         Returns: Json
+      }
+      lovable_complete_shopping_item: {
+        Args: { p_household_slug: string; p_shopping_item_id: string }
+        Returns: {
+          created_at: string
+          custom_name: string | null
+          household_id: string
+          id: string
+          item_id: string | null
+          needed_by: string | null
+          priority: string
+          purchase_id: string | null
+          purchased_at: string | null
+          quantity: number | null
+          reason: string | null
+          source: string | null
+          status: string
+          store_id: string | null
+          unit: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "shopping_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       lovable_correct_food_inventory: {
         Args: {
@@ -5265,6 +5356,60 @@ export type Database = {
           p_recipe_id?: string
         }
         Returns: Json
+      }
+      lovable_restore_shopping_item: {
+        Args: { p_household_slug: string; p_shopping_item_id: string }
+        Returns: {
+          created_at: string
+          custom_name: string | null
+          household_id: string
+          id: string
+          item_id: string | null
+          needed_by: string | null
+          priority: string
+          purchase_id: string | null
+          purchased_at: string | null
+          quantity: number | null
+          reason: string | null
+          source: string | null
+          status: string
+          store_id: string | null
+          unit: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "shopping_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      lovable_skip_shopping_item: {
+        Args: { p_household_slug: string; p_shopping_item_id: string }
+        Returns: {
+          created_at: string
+          custom_name: string | null
+          household_id: string
+          id: string
+          item_id: string | null
+          needed_by: string | null
+          priority: string
+          purchase_id: string | null
+          purchased_at: string | null
+          quantity: number | null
+          reason: string | null
+          source: string | null
+          status: string
+          store_id: string | null
+          unit: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "shopping_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       mark_pet_medication_given: {
         Args: {
