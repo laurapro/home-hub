@@ -295,9 +295,9 @@ function HomePage() {
                     {store.urgent_count ? ` · ${store.urgent_count} urgent` : ""}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                    {store.next_needed_by && (
+                    {store.next_needed_by && formatDay(store.next_needed_by) && (
                       <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">
-                        needed by {formatDay(store.next_needed_by) ?? store.next_needed_by}
+                        needed by {formatDay(store.next_needed_by)}
                       </span>
                     )}
                     {store.dog_food_included && (

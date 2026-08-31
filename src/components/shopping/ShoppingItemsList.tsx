@@ -41,7 +41,9 @@ function ItemRow({ item, children }: { item: ShoppingItem; children?: React.Reac
         <div className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-muted-foreground">
           {item.store_name && <span>{item.store_name}</span>}
           {item.priority && item.priority !== "normal" && <span>{item.priority}</span>}
-          {item.needed_by && <span>needed by {formatDay(item.needed_by) ?? item.needed_by}</span>}
+          {item.needed_by && formatDay(item.needed_by) && (
+            <span>needed by {formatDay(item.needed_by)}</span>
+          )}
         </div>
       </div>
       {children && <div className="flex flex-wrap gap-2">{children}</div>}

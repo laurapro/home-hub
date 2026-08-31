@@ -117,6 +117,12 @@ export function tomorrowKey() {
   return dateKey(1);
 }
 
+const WEEKDAY_ABBR = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+/**
+ * Format as time only: "1:00 PM"
+ * Input: ISO timestamp or null
+ */
 export function formatTime(value: string | null): string | null {
   if (!value) return null;
   const date = new Date(value);
@@ -128,21 +134,76 @@ export function formatTime(value: string | null): string | null {
   });
 }
 
-export function formatDayTime(value: string | null): string | null {
+/**
+ * Format as compact date: "Tu 08/22"
+ * Handles both ISO timestamps and DATE-only strings (YYYY-MM-DD).
+ * America/Chicago timezone is applied explicitly.
+ */
+export function formatCompactDate(value: string | null): string | null {
+  if (!value) return null;
+
+  // Detect if this is a DATE-only string (YYYY-MM-DD) or ISO timestamp
+  const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+  // Parse the date in America/Chicago timezone
+  const date = new Date(isDateOnly ? `${value}T00:00:00Z` : value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  // Get components in the household timezone
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: HOUSEHOLD_TIMEZONE,
+    weekday: "short",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const partsByType = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  const weekdayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(
+    partsByType.weekday,
+  );
+  const weekdayAbbr = WEEKDAY_ABBR[weekdayIndex] ?? "??";
+  const month = partsByType.month;
+  const day = partsByType.day;
+
+  return `${weekdayAbbr} ${month}/${day}`;
+}
+
+/**
+ * Format as compact date + time: "Tu 08/22 · 1:00 PM"
+ * Input: ISO timestamp or null
+ * America/Chicago timezone is applied explicitly.
+ */
+export function formatCompactDateTime(value: string | null): string | null {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleString([], {
-    weekday: "short",
+
+  // Get the compact date part
+  const datePart = formatCompactDate(value);
+  if (!datePart) return null;
+
+  // Get the time part
+  const timePart = date.toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
     timeZone: HOUSEHOLD_TIMEZONE,
   });
+
+  return `${datePart} · ${timePart}`;
 }
 
+/**
+ * Legacy alias: Format as compact date "Tu 08/22"
+ * @deprecated Use formatCompactDate directly
+ */
 export function formatDay(value: string | null): string | null {
-  if (!value) return null;
-  const date = new Date(`${value}T12:00:00`);
-  if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
+  return formatCompactDate(value);
+}
+
+/**
+ * Legacy alias: Format as compact date + time "Tu 08/22 · 1:00 PM"
+ * @deprecated Use formatCompactDateTime directly
+ */
+export function formatDayTime(value: string | null): string | null {
+  return formatCompactDateTime(value);
 }

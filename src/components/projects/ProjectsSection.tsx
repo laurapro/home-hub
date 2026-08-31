@@ -76,8 +76,8 @@ export function ProjectsSection({
             <div className="mt-1 space-y-0.5 text-sm text-muted-foreground">
               {project.next_action && <p>Next: {project.next_action}</p>}
               {project.waiting_on && <p>Waiting on: {project.waiting_on}</p>}
-              {project.follow_up_at && (
-                <p>Follow up {formatDayTime(project.follow_up_at) ?? project.follow_up_at}</p>
+              {project.follow_up_at && formatDayTime(project.follow_up_at) && (
+                <p>Follow up {formatDayTime(project.follow_up_at)}</p>
               )}
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
