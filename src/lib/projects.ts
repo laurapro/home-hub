@@ -13,6 +13,7 @@ export const PROJECT_STATUSES = [
   "scheduled",
   "blocked",
 ] as const;
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
 
 export function useProjects(enabled: boolean) {
   return useQuery({
@@ -67,7 +68,7 @@ export const completeProject = (args: Fns["lovable_complete_project"]["Args"]) =
 /** Client-side mirror of backend rules; backend remains authoritative. */
 export function validateProject(fields: {
   name: string;
-  status: string;
+  status: ProjectStatus;
   waiting_on: string;
   next_action: string;
   follow_up_at: string;

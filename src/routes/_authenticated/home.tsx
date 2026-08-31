@@ -8,6 +8,8 @@ import { CorrectInventoryDialog } from "@/components/food/CorrectInventoryDialog
 import { MealActions } from "@/components/food/MealActions";
 import { AddShoppingItemDialog } from "@/components/shopping/AddShoppingItemDialog";
 import { ShoppingItemsList } from "@/components/shopping/ShoppingItemsList";
+import { ProjectDialog } from "@/components/projects/ProjectDialog";
+import { ProjectsSection } from "@/components/projects/ProjectsSection";
 import {
   formatDay,
   formatDayTime,
@@ -23,6 +25,7 @@ import {
   type MealItem,
 } from "@/lib/household";
 import { getInteractiveCardClasses } from "@/lib/utils";
+import { useProjects } from "@/lib/projects";
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
@@ -177,6 +180,7 @@ function HomePage() {
   const membership = useHouseholdMembership();
   const isMember = !!membership.data;
   const data = useHomeData(isMember);
+  const projects = useProjects(isMember);
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
@@ -187,6 +191,7 @@ function HomePage() {
 
   const needsYou = data.attention.filter(isNeedsYou);
   const comingUp = data.attention.filter(isUpcoming).slice(0, 4);
+  const hasProjectsAttention = data.attention.some((item) => item.domain === "projects");
   const tonight = data.meals.filter((m) => m.planned_for === todayKey());
   const tomorrow = data.meals.filter((m) => m.planned_for === tomorrowKey());
 
@@ -211,6 +216,13 @@ function HomePage() {
             <PlanMealDialog enabled={isMember} />
             <CorrectInventoryDialog enabled={isMember} />
             <AddShoppingItemDialog enabled={isMember} />
+            <ProjectDialog
+              trigger={
+                <Button variant="outline" size="sm" className="h-10">
+                  New project
+                </Button>
+              }
+            />
           </>
         )}
         <Button variant="ghost" size="sm" className="h-10" onClick={handleSignOut}>
@@ -254,7 +266,9 @@ function HomePage() {
       needsYou.length > 0 ||
       tonight.length + tomorrow.length > 0 ||
       data.shopping.length > 0 ||
-      comingUp.length > 0;
+      comingUp.length > 0 ||
+      (projects.data?.length ?? 0) > 0 ||
+      hasProjectsAttention;
 
     body = (
       <div className="space-y-8">
@@ -344,6 +358,8 @@ function HomePage() {
             </div>
           </Section>
         )}
+
+        <ProjectsSection enabled={isMember} hasAttention={hasProjectsAttention} />
 
         {!hasAnything && (
           <p className="text-sm text-muted-foreground">

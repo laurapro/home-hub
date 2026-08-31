@@ -159,11 +159,11 @@ export function formatCompactDate(value: string | null): string | null {
 
   const partsByType = Object.fromEntries(parts.map((p) => [p.type, p.value]));
   const weekdayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(
-    partsByType.weekday,
+    partsByType["weekday"] ?? "",
   );
   const weekdayAbbr = WEEKDAY_ABBR[weekdayIndex] ?? "??";
-  const month = partsByType.month;
-  const day = partsByType.day;
+  const month = partsByType["month"];
+  const day = partsByType["day"];
 
   return `${weekdayAbbr} ${month}/${day}`;
 }
