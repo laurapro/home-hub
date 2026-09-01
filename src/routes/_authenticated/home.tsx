@@ -465,110 +465,110 @@ function HomePage() {
     body = (
       <div className="grid items-start gap-8 lg:grid-cols-3">
         <div className="space-y-8 lg:col-span-2">
-        {data.timeline.length > 0 && (
-          <Section title="Today">
-            <div className="space-y-2">
-              {data.timeline.map((item, i) => {
-                const informational = item.item_type !== "calendar_event";
-                return (
-                  <Card key={item.entity_id ?? `timeline-${i}`}>
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <p className="font-medium text-foreground">{item.title}</p>
-                      <span className="text-sm tabular-nums text-muted-foreground">
-                        {item.all_day ? "All day" : formatTime(item.starts_at)}
-                        {!item.all_day && item.ends_at ? ` – ${formatTime(item.ends_at)}` : ""}
-                      </span>
-                    </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      {item.location && <span>{item.location}</span>}
-                      {informational && (
-                        <span className="rounded-full bg-secondary px-2 py-0.5 text-secondary-foreground">
-                          informational
+          {data.timeline.length > 0 && (
+            <Section title="Today">
+              <div className="space-y-2">
+                {data.timeline.map((item, i) => {
+                  const informational = item.item_type !== "calendar_event";
+                  return (
+                    <Card key={item.entity_id ?? `timeline-${i}`}>
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <p className="font-medium text-foreground">{item.title}</p>
+                        <span className="text-sm tabular-nums text-muted-foreground">
+                          {item.all_day ? "All day" : formatTime(item.starts_at)}
+                          {!item.all_day && item.ends_at ? ` – ${formatTime(item.ends_at)}` : ""}
                         </span>
-                      )}
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </Section>
-        )}
-
-        {needsYou.length > 0 && (
-          <Section title="Needs you">
-            <div className="grid gap-3 sm:grid-cols-2">
-              {needsYou.map((item, i) => (
-                <AttentionCard
-                  key={item.entity_id ?? `needs-${i}`}
-                  item={item}
-                  inlineAction
-                  petAttention={pets.data?.find((pet) => pet.entity_id === item.entity_id)}
-                />
-              ))}
-            </div>
-          </Section>
-        )}
-
-        {tonight.length + tomorrow.length > 0 && (
-          <Section title="Meals">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <MealCard label="Tonight" meals={tonight} />
-              <MealCard label={`Tomorrow · ${formatDay(tomorrowKey()) ?? ""}`} meals={tomorrow} />
-            </div>
-          </Section>
-        )}
-
-        {data.shopping.length > 0 && (
-          <Section title="Shopping">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {data.shopping.map((store, i) => (
-                <Link
-                  key={store.store_name ?? `store-${i}`}
-                  to="/shopping"
-                  className={cardClasses(undefined, true)}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-foreground">{store.store_name ?? "Store"}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {store.item_count ?? 0} item{store.item_count === 1 ? "" : "s"}
-                        {store.urgent_count ? ` · ${store.urgent_count} urgent` : ""}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                        {store.next_needed_by && formatDay(store.next_needed_by) && (
-                          <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">
-                            needed by {formatDay(store.next_needed_by)}
-                          </span>
-                        )}
-                        {store.dog_food_included && (
-                          <span className="rounded-full bg-accent px-2.5 py-1 text-accent-foreground">
-                            dog food
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        {item.location && <span>{item.location}</span>}
+                        {informational && (
+                          <span className="rounded-full bg-secondary px-2 py-0.5 text-secondary-foreground">
+                            informational
                           </span>
                         )}
                       </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </Section>
+          )}
+
+          {needsYou.length > 0 && (
+            <Section title="Needs you">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {needsYou.map((item, i) => (
+                  <AttentionCard
+                    key={item.entity_id ?? `needs-${i}`}
+                    item={item}
+                    inlineAction
+                    petAttention={pets.data?.find((pet) => pet.entity_id === item.entity_id)}
+                  />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {tonight.length + tomorrow.length > 0 && (
+            <Section title="Meals">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <MealCard label="Tonight" meals={tonight} />
+                <MealCard label={`Tomorrow · ${formatDay(tomorrowKey()) ?? ""}`} meals={tomorrow} />
+              </div>
+            </Section>
+          )}
+
+          {data.shopping.length > 0 && (
+            <Section title="Shopping">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {data.shopping.map((store, i) => (
+                  <Link
+                    key={store.store_name ?? `store-${i}`}
+                    to="/shopping"
+                    className={cardClasses(undefined, true)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-foreground">{store.store_name ?? "Store"}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {store.item_count ?? 0} item{store.item_count === 1 ? "" : "s"}
+                          {store.urgent_count ? ` · ${store.urgent_count} urgent` : ""}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                          {store.next_needed_by && formatDay(store.next_needed_by) && (
+                            <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">
+                              needed by {formatDay(store.next_needed_by)}
+                            </span>
+                          )}
+                          {store.dog_food_included && (
+                            <span className="rounded-full bg-accent px-2.5 py-1 text-accent-foreground">
+                              dog food
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronRight className="mt-0.5 size-5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
                     </div>
-                    <ChevronRight className="mt-0.5 size-5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
-                  </div>
-                </Link>
-              ))}
-            </div>
-            <ShoppingItemsList enabled={isMember} />
-          </Section>
-        )}
+                  </Link>
+                ))}
+              </div>
+              <ShoppingItemsList enabled={isMember} />
+            </Section>
+          )}
 
-        {comingUp.length > 0 && (
-          <Section title="Coming up">
-            <div className="grid gap-3 sm:grid-cols-2">
-              {comingUp.map((item, i) => (
-                <AttentionCard key={item.entity_id ?? `upcoming-${i}`} item={item} />
-              ))}
-            </div>
-          </Section>
-        )}
+          {comingUp.length > 0 && (
+            <Section title="Coming up">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {comingUp.map((item, i) => (
+                  <AttentionCard key={item.entity_id ?? `upcoming-${i}`} item={item} />
+                ))}
+              </div>
+            </Section>
+          )}
 
-        <PetsSection enabled={isMember} />
+          <PetsSection enabled={isMember} />
 
-        <ProjectsSection enabled={isMember} hasAttention={hasProjectsAttention} />
+          <ProjectsSection enabled={isMember} hasAttention={hasProjectsAttention} />
 
           {!hasAnything && (
             <p className="text-sm text-muted-foreground">
