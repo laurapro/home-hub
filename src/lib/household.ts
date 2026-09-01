@@ -7,12 +7,14 @@ export const HOUSEHOLD_TIMEZONE = "America/Chicago";
 
 type Fns = Database["public"]["Functions"];
 export type TimelineItem = Fns["get_lovable_today_timeline"]["Returns"][number];
+export type TomorrowTimelineItem = Fns["get_lovable_tomorrow_timeline"]["Returns"][number];
 export type AttentionItem = Fns["get_lovable_household_attention"]["Returns"][number];
 export type MealItem = Fns["get_lovable_home_meals"]["Returns"][number];
 export type ShoppingSummary = Fns["get_lovable_shopping_summary"]["Returns"][number];
 
 type RpcName =
   | "get_lovable_today_timeline"
+  | "get_lovable_tomorrow_timeline"
   | "get_lovable_household_attention"
   | "get_lovable_home_meals"
   | "get_lovable_shopping_summary";
@@ -52,6 +54,12 @@ export function useHomeData(enabled: boolean) {
     enabled,
     refetchInterval: HOME_REFETCH_INTERVAL_MS,
   });
+  const tomorrowTimeline = useQuery({
+    queryKey: ["tomorrow-timeline", HOUSEHOLD_SLUG],
+    queryFn: () => callRpc<TomorrowTimelineItem>("get_lovable_tomorrow_timeline"),
+    enabled,
+    refetchInterval: HOME_REFETCH_INTERVAL_MS,
+  });
   const attention = useQuery({
     queryKey: ["household-attention", HOUSEHOLD_SLUG],
     queryFn: () => callRpc<AttentionItem>("get_lovable_household_attention"),
@@ -71,12 +79,13 @@ export function useHomeData(enabled: boolean) {
     refetchInterval: HOME_REFETCH_INTERVAL_MS,
   });
 
-  const queries = [timeline, attention, meals, shopping];
+  const queries = [timeline, tomorrowTimeline, attention, meals, shopping];
 
   return {
     isLoading: enabled && queries.some((q) => q.isPending),
     errorMessage: (queries.find((q) => q.error)?.error as Error | undefined)?.message ?? null,
     timeline: timeline.data ?? [],
+    tomorrowTimeline: tomorrowTimeline.data ?? [],
     attention: attention.data ?? [],
     meals: meals.data ?? [],
     shopping: shopping.data ?? [],

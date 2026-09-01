@@ -5318,6 +5318,21 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_lovable_tomorrow_timeline: {
+        Args: { p_household_slug?: string }
+        Returns: {
+          all_day: boolean
+          ends_at: string
+          entity_id: string
+          household_id: string
+          item_type: string
+          location: string
+          metadata: Json
+          sort_rank: number
+          starts_at: string
+          title: string
+        }[]
+      }
       get_pets_attention: { Args: { p_household_slug?: string }; Returns: Json }
       lovable_add_planned_meal_item_to_shopping: {
         Args: { p_item_id: string; p_planned_meal_id: string }

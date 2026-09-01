@@ -25,6 +25,7 @@ import {
   useHouseholdMembership,
   type AttentionItem,
   type MealItem,
+  type TimelineItem,
 } from "@/lib/household";
 import { cn, getInteractiveCardClasses } from "@/lib/utils";
 import { useProjects } from "@/lib/projects";
@@ -105,6 +106,43 @@ function cardClasses(tone?: string, interactive = false) {
     border,
     interactive && "group",
     interactive && getInteractiveCardClasses(),
+  );
+}
+
+function ScheduleList({ items }: { items: TimelineItem[] }) {
+  return (
+    <div className="space-y-2">
+      {items.map((item, i) => {
+        const isCalendar = item.item_type === "calendar_event" || item.item_type === "calendar";
+        return (
+          <Card
+            key={item.entity_id ?? `timeline-${i}`}
+            className={isCalendar ? "bg-calendar/75" : "bg-routine/75"}
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <p className="font-medium text-foreground">{item.title}</p>
+              <span className="text-sm tabular-nums text-muted-foreground">
+                {item.all_day ? "All day" : formatTime(item.starts_at)}
+                {!item.all_day && item.ends_at ? ` – ${formatTime(item.ends_at)}` : ""}
+              </span>
+            </div>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              {item.location && <span>{item.location}</span>}
+              <span
+                className={cn(
+                  "rounded-full px-2.5 py-1 font-medium",
+                  isCalendar
+                    ? "bg-calendar text-calendar-foreground"
+                    : "bg-routine text-routine-foreground",
+                )}
+              >
+                {isCalendar ? "Calendar" : "Routine"}
+              </span>
+            </div>
+          </Card>
+        );
+      })}
+    </div>
   );
 }
 
@@ -349,25 +387,42 @@ function UseSoonCard({ items }: { items: AttentionItem[] }) {
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         Use soon
       </h2>
-      <div className="rounded-xl border bg-food/75 p-4 shadow-sm">
-        <ul className="divide-y">
+      <div className="overflow-hidden rounded-xl border bg-food/75 shadow-sm">
+        <ul className="divide-y divide-border/70">
           {items.map((item, i) => (
-            <li key={item.entity_id ?? `use-soon-${i}`} className="py-2 first:pt-0 last:pb-0">
-              <div className="flex items-baseline justify-between gap-2">
-                <p className="break-words text-sm font-medium text-foreground">
-                  {item.title ?? item.attention_type}
-                </p>
-                {item.due_at && (
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    {formatDay(item.due_at)}
-                  </span>
-                )}
-              </div>
-              {item.human_action && (
-                <p className="mt-0.5 break-words text-xs text-muted-foreground">
-                  {item.human_action}
-                </p>
-              )}
+            <li key={item.entity_id ?? `use-soon-${i}`}>
+              <CorrectInventoryDialog
+                enabled
+                inventoryId={item.entity_id ?? ""}
+                trigger={
+                  <button
+                    type="button"
+                    className={cn(
+                      "group flex w-full items-center gap-3 p-4 text-left",
+                      getInteractiveCardClasses(),
+                    )}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <p className="break-words text-sm font-medium text-foreground">
+                          {item.title ?? item.attention_type}
+                        </p>
+                        {item.due_at && (
+                          <span className="shrink-0 text-xs text-muted-foreground">
+                            {formatDay(item.due_at)}
+                          </span>
+                        )}
+                      </div>
+                      {item.human_action && (
+                        <p className="mt-0.5 break-words text-xs text-muted-foreground">
+                          {item.human_action}
+                        </p>
+                      )}
+                    </div>
+                    <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+                  </button>
+                }
+              />
             </li>
           ))}
         </ul>
@@ -427,7 +482,6 @@ function HomePage() {
         {isMember && (
           <>
             <PlanMealDialog enabled={isMember} />
-            <CorrectInventoryDialog enabled={isMember} />
             <AddShoppingItemDialog enabled={isMember} />
             <ProjectDialog
               trigger={
@@ -495,6 +549,7 @@ function HomePage() {
 
     const hasAnything =
       data.timeline.length > 0 ||
+      data.tomorrowTimeline.length > 0 ||
       needsYou.length > 0 ||
       tonight.length + tomorrow.length > 0 ||
       data.shopping.length > 0 ||
@@ -509,38 +564,7 @@ function HomePage() {
         <div className="space-y-8 lg:col-span-2">
           {data.timeline.length > 0 && (
             <Section title="Today">
-              <div className="space-y-2">
-                {data.timeline.map((item, i) => {
-                  const isCalendar = item.item_type === "calendar_event";
-                  return (
-                    <Card
-                      key={item.entity_id ?? `timeline-${i}`}
-                      className={isCalendar ? "bg-calendar/75" : "bg-routine/75"}
-                    >
-                      <div className="flex flex-wrap items-baseline justify-between gap-2">
-                        <p className="font-medium text-foreground">{item.title}</p>
-                        <span className="text-sm tabular-nums text-muted-foreground">
-                          {item.all_day ? "All day" : formatTime(item.starts_at)}
-                          {!item.all_day && item.ends_at ? ` – ${formatTime(item.ends_at)}` : ""}
-                        </span>
-                      </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                        {item.location && <span>{item.location}</span>}
-                        <span
-                          className={cn(
-                            "rounded-full px-2.5 py-1 font-medium",
-                            isCalendar
-                              ? "bg-calendar text-calendar-foreground"
-                              : "bg-routine text-routine-foreground",
-                          )}
-                        >
-                          {isCalendar ? "Calendar" : "Routine"}
-                        </span>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
+              <ScheduleList items={data.timeline} />
             </Section>
           )}
 
@@ -614,6 +638,16 @@ function HomePage() {
           <PetsSection enabled={isMember} />
 
           <ProjectsSection enabled={isMember} hasAttention={hasProjectsAttention} />
+
+          <Section title="Tomorrow" hint="FYI">
+            {data.tomorrowTimeline.length > 0 ? (
+              <ScheduleList items={data.tomorrowTimeline} />
+            ) : (
+              <Card className="bg-muted/50">
+                <p className="text-sm text-muted-foreground">Nothing scheduled tomorrow.</p>
+              </Card>
+            )}
+          </Section>
 
           {!hasAnything && (
             <p className="text-sm text-muted-foreground">
