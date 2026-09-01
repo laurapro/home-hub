@@ -79,13 +79,17 @@ export function useHomeData(enabled: boolean) {
     refetchInterval: HOME_REFETCH_INTERVAL_MS,
   });
 
-  const queries = [timeline, tomorrowTimeline, attention, meals, shopping];
+  // Tomorrow is supplemental. Its loading or failure must never hide today's
+  // otherwise healthy home data.
+  const coreQueries = [timeline, attention, meals, shopping];
 
   return {
-    isLoading: enabled && queries.some((q) => q.isPending),
-    errorMessage: (queries.find((q) => q.error)?.error as Error | undefined)?.message ?? null,
+    isLoading: enabled && coreQueries.some((q) => q.isPending),
+    errorMessage: (coreQueries.find((q) => q.error)?.error as Error | undefined)?.message ?? null,
     timeline: timeline.data ?? [],
     tomorrowTimeline: tomorrowTimeline.data ?? [],
+    tomorrowIsLoading: tomorrowTimeline.isPending,
+    tomorrowError: (tomorrowTimeline.error as Error | null)?.message ?? null,
     attention: attention.data ?? [],
     meals: meals.data ?? [],
     shopping: shopping.data ?? [],

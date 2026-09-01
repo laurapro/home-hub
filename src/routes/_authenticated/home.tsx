@@ -640,7 +640,18 @@ function HomePage() {
           <ProjectsSection enabled={isMember} hasAttention={hasProjectsAttention} />
 
           <Section title="Tomorrow" hint="FYI">
-            {data.tomorrowTimeline.length > 0 ? (
+            {data.tomorrowIsLoading ? (
+              <Card className="bg-muted/50">
+                <p className="text-sm text-muted-foreground">Loading tomorrow’s schedule…</p>
+              </Card>
+            ) : data.tomorrowError ? (
+              <Card className="bg-muted/50">
+                <p className="text-sm text-muted-foreground">
+                  Tomorrow’s schedule is temporarily unavailable. Today’s information is still up to
+                  date.
+                </p>
+              </Card>
+            ) : data.tomorrowTimeline.length > 0 ? (
               <ScheduleList items={data.tomorrowTimeline} />
             ) : (
               <Card className="bg-muted/50">
