@@ -50,7 +50,7 @@ export function MealActions({ meal }: { meal: ActionableMeal }) {
               key={`thaw-${item.item_id}`}
               size="sm"
               variant="outline"
-              className="h-10"
+              className="h-11"
               disabled={thaw.isPending}
               onClick={() =>
                 thaw.mutate({ p_planned_meal_id: plannedMealId, p_item_id: item.item_id })
@@ -69,7 +69,7 @@ export function MealActions({ meal }: { meal: ActionableMeal }) {
               key={`missing-${item.item_id}`}
               size="sm"
               variant="outline"
-              className="h-10"
+              className="h-11"
               disabled={toShopping.isPending}
               onClick={() =>
                 toShopping.mutate({ p_planned_meal_id: plannedMealId, p_item_id: item.item_id })
@@ -82,13 +82,13 @@ export function MealActions({ meal }: { meal: ActionableMeal }) {
       )}
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <Button size="sm" className="h-10" disabled={busy} onClick={() => setConfirm("complete")}>
+        <Button size="sm" className="h-11" disabled={busy} onClick={() => setConfirm("complete")}>
           Complete meal
         </Button>
         <Button
           size="sm"
           variant="ghost"
-          className="h-10"
+          className="h-11"
           disabled={busy}
           onClick={() => setConfirm("cancel")}
         >
@@ -109,12 +109,9 @@ export function MealActions({ meal }: { meal: ActionableMeal }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-3">
-            <AlertDialogCancel disabled={busy} className="h-10 sm:h-auto">
-              Keep as is
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={busy}>Keep as is</AlertDialogCancel>
             <AlertDialogAction
               disabled={busy}
-              className="h-10 sm:h-auto"
               onClick={(e) => {
                 e.preventDefault();
                 const action = confirm;

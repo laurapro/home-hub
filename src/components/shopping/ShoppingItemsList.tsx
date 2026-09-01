@@ -112,7 +112,7 @@ export function ShoppingItemsList({
                     <ItemRow key={item.id} item={item}>
                       <Button
                         size="sm"
-                        className="h-10"
+                        className="h-11"
                         disabled={busy}
                         onClick={() => setConfirm({ kind: "complete", item })}
                       >
@@ -121,7 +121,7 @@ export function ShoppingItemsList({
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-10"
+                        className="h-11"
                         disabled={busy}
                         onClick={() => setConfirm({ kind: "skip", item })}
                       >
@@ -144,7 +144,7 @@ export function ShoppingItemsList({
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-10"
+                        className="h-11"
                         disabled={busy}
                         onClick={() =>
                           restore.mutate({

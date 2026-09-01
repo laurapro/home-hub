@@ -84,7 +84,7 @@ function AuthPage() {
             />
           </div>
           {status && <p className="text-sm text-critical">{status}</p>}
-          <Button type="submit" className="w-full" disabled={busy}>
+          <Button type="submit" className="h-11 w-full" disabled={busy}>
             {busy ? "Signing in…" : "Sign in"}
           </Button>
         </form>
