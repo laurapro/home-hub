@@ -269,7 +269,7 @@ function MealCard({ label, meals }: { label: string; meals: MealItem[] }) {
         {meals.map((meal, i) => (
           <div
             key={meal.planned_meal_id ?? `${label}-${i}`}
-            className="overflow-hidden rounded-xl border bg-food/55 shadow-sm"
+            className="overflow-hidden rounded-xl border bg-food/75 shadow-sm"
           >
             {meal.planned_meal_id ? (
               <Link
@@ -349,7 +349,7 @@ function UseSoonCard({ items }: { items: AttentionItem[] }) {
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         Use soon
       </h2>
-      <div className="rounded-xl border bg-routine/45 p-4 shadow-sm">
+      <div className="rounded-xl border bg-routine/70 p-4 shadow-sm">
         <ul className="divide-y">
           {items.map((item, i) => (
             <li key={item.entity_id ?? `use-soon-${i}`} className="py-2 first:pt-0 last:pb-0">
@@ -409,7 +409,7 @@ function HomePage() {
   const tomorrow = data.meals.filter((m) => m.planned_for === tomorrowKey());
 
   const header = (
-    <header className="flex flex-wrap items-start justify-between gap-4">
+    <header className="sticky top-0 z-40 -mx-4 flex flex-wrap items-start justify-between gap-4 border-b bg-background/95 px-4 py-4 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:-mx-6 sm:px-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
           Today at home
@@ -499,7 +499,7 @@ function HomePage() {
                   return (
                     <Card
                       key={item.entity_id ?? `timeline-${i}`}
-                      className={isCalendar ? "bg-calendar/55" : "bg-routine/55"}
+                      className={isCalendar ? "bg-calendar/75" : "bg-routine/75"}
                     >
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
                         <p className="font-medium text-foreground">{item.title}</p>
@@ -559,7 +559,7 @@ function HomePage() {
                   <Link
                     key={store.store_name ?? `store-${i}`}
                     to="/shopping"
-                    className={cn(cardClasses(undefined, true), "bg-shopping/45")}
+                    className={cn(cardClasses(undefined, true), "bg-shopping/70")}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
@@ -621,7 +621,7 @@ function HomePage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className="mx-auto w-full max-w-5xl px-4 pb-8 sm:px-6 sm:pb-10">
       {header}
       <div className="mt-8">{body}</div>
     </main>
