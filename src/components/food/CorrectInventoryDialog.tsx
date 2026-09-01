@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,7 +26,15 @@ import {
   useFoodInventory,
 } from "@/lib/food";
 
-export function CorrectInventoryDialog({ enabled }: { enabled: boolean }) {
+export function CorrectInventoryDialog({
+  enabled,
+  inventoryId: initialInventoryId = "",
+  trigger,
+}: {
+  enabled: boolean;
+  inventoryId?: string;
+  trigger?: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const [inventoryId, setInventoryId] = useState("");
   const [status, setStatus] = useState("");
@@ -83,13 +91,16 @@ export function CorrectInventoryDialog({ enabled }: { enabled: boolean }) {
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (!next) reset();
+        if (next) setInventoryId(initialInventoryId);
+        else reset();
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="h-11">
-          Correct inventory
-        </Button>
+        {trigger ?? (
+          <Button size="sm" variant="outline" className="h-11">
+            Correct inventory
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
