@@ -316,6 +316,40 @@ function MealCardContent({ meal }: { meal: MealItem }) {
   );
 }
 
+/** Compact side card: inventory the household could use up soon. */
+function UseSoonCard({ items }: { items: AttentionItem[] }) {
+  return (
+    <section className="space-y-3">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        Use soon
+      </h2>
+      <div className="rounded-xl border bg-card p-4 shadow-sm">
+        <ul className="divide-y">
+          {items.map((item, i) => (
+            <li key={item.entity_id ?? `use-soon-${i}`} className="py-2 first:pt-0 last:pb-0">
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="break-words text-sm font-medium text-foreground">
+                  {item.title ?? item.attention_type}
+                </p>
+                {item.due_at && (
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {formatDay(item.due_at)}
+                  </span>
+                )}
+              </div>
+              {item.human_action && (
+                <p className="mt-0.5 break-words text-xs text-muted-foreground">
+                  {item.human_action}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 function HomePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -332,8 +366,18 @@ function HomePage() {
     navigate({ to: "/auth", replace: true });
   }
 
-  const needsYou = data.attention.filter(isNeedsYou);
-  const comingUp = data.attention.filter(isUpcoming).slice(0, 4);
+  // Shopping-list items live in the Shopping section; inventory "use soon"
+  // nudges get their own compact card. Neither belongs in Needs you.
+  const isShoppingListItem = (item: AttentionItem) => item.entity_type === "shopping_item";
+  const isUseSoon = (item: AttentionItem) => item.entity_type === "inventory";
+
+  const needsYou = data.attention.filter(
+    (item) => isNeedsYou(item) && !isShoppingListItem(item) && !isUseSoon(item),
+  );
+  const useSoon = data.attention.filter(isUseSoon);
+  const comingUp = data.attention
+    .filter((item) => isUpcoming(item) && !isShoppingListItem(item) && !isUseSoon(item))
+    .slice(0, 4);
   const hasProjectsAttention = data.attention.some((item) => item.domain === "projects");
   const tonight = data.meals.filter((m) => m.planned_for === todayKey());
   const tomorrow = data.meals.filter((m) => m.planned_for === tomorrowKey());
@@ -413,128 +457,137 @@ function HomePage() {
       tonight.length + tomorrow.length > 0 ||
       data.shopping.length > 0 ||
       comingUp.length > 0 ||
+      useSoon.length > 0 ||
       (projects.data?.length ?? 0) > 0 ||
       (pets.data?.length ?? 0) > 0 ||
       hasProjectsAttention;
 
     body = (
-      <div className="space-y-8">
-        {data.timeline.length > 0 && (
-          <Section title="Today">
-            <div className="space-y-2">
-              {data.timeline.map((item, i) => {
-                const informational = item.item_type !== "calendar_event";
-                return (
-                  <Card key={item.entity_id ?? `timeline-${i}`}>
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <p className="font-medium text-foreground">{item.title}</p>
-                      <span className="text-sm tabular-nums text-muted-foreground">
-                        {item.all_day ? "All day" : formatTime(item.starts_at)}
-                        {!item.all_day && item.ends_at ? ` – ${formatTime(item.ends_at)}` : ""}
-                      </span>
-                    </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      {item.location && <span>{item.location}</span>}
-                      {informational && (
-                        <span className="rounded-full bg-secondary px-2 py-0.5 text-secondary-foreground">
-                          informational
+      <div className="grid items-start gap-8 lg:grid-cols-3">
+        <div className="space-y-8 lg:col-span-2">
+          {data.timeline.length > 0 && (
+            <Section title="Today">
+              <div className="space-y-2">
+                {data.timeline.map((item, i) => {
+                  const informational = item.item_type !== "calendar_event";
+                  return (
+                    <Card key={item.entity_id ?? `timeline-${i}`}>
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <p className="font-medium text-foreground">{item.title}</p>
+                        <span className="text-sm tabular-nums text-muted-foreground">
+                          {item.all_day ? "All day" : formatTime(item.starts_at)}
+                          {!item.all_day && item.ends_at ? ` – ${formatTime(item.ends_at)}` : ""}
                         </span>
-                      )}
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </Section>
-        )}
-
-        {needsYou.length > 0 && (
-          <Section title="Needs you">
-            <div className="grid gap-3 sm:grid-cols-2">
-              {needsYou.map((item, i) => (
-                <AttentionCard
-                  key={item.entity_id ?? `needs-${i}`}
-                  item={item}
-                  inlineAction
-                  petAttention={pets.data?.find((pet) => pet.entity_id === item.entity_id)}
-                />
-              ))}
-            </div>
-          </Section>
-        )}
-
-        {tonight.length + tomorrow.length > 0 && (
-          <Section title="Meals">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <MealCard label="Tonight" meals={tonight} />
-              <MealCard label={`Tomorrow · ${formatDay(tomorrowKey()) ?? ""}`} meals={tomorrow} />
-            </div>
-          </Section>
-        )}
-
-        {data.shopping.length > 0 && (
-          <Section title="Shopping">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {data.shopping.map((store, i) => (
-                <Link
-                  key={store.store_name ?? `store-${i}`}
-                  to="/shopping"
-                  className={cardClasses(undefined, true)}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-foreground">{store.store_name ?? "Store"}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {store.item_count ?? 0} item{store.item_count === 1 ? "" : "s"}
-                        {store.urgent_count ? ` · ${store.urgent_count} urgent` : ""}
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                        {store.next_needed_by && formatDay(store.next_needed_by) && (
-                          <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">
-                            needed by {formatDay(store.next_needed_by)}
-                          </span>
-                        )}
-                        {store.dog_food_included && (
-                          <span className="rounded-full bg-accent px-2.5 py-1 text-accent-foreground">
-                            dog food
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        {item.location && <span>{item.location}</span>}
+                        {informational && (
+                          <span className="rounded-full bg-secondary px-2 py-0.5 text-secondary-foreground">
+                            informational
                           </span>
                         )}
                       </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </Section>
+          )}
+
+          {needsYou.length > 0 && (
+            <Section title="Needs you">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {needsYou.map((item, i) => (
+                  <AttentionCard
+                    key={item.entity_id ?? `needs-${i}`}
+                    item={item}
+                    inlineAction
+                    petAttention={pets.data?.find((pet) => pet.entity_id === item.entity_id)}
+                  />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {tonight.length + tomorrow.length > 0 && (
+            <Section title="Meals">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <MealCard label="Tonight" meals={tonight} />
+                <MealCard label={`Tomorrow · ${formatDay(tomorrowKey()) ?? ""}`} meals={tomorrow} />
+              </div>
+            </Section>
+          )}
+
+          {data.shopping.length > 0 && (
+            <Section title="Shopping">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {data.shopping.map((store, i) => (
+                  <Link
+                    key={store.store_name ?? `store-${i}`}
+                    to="/shopping"
+                    className={cardClasses(undefined, true)}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-foreground">{store.store_name ?? "Store"}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {store.item_count ?? 0} item{store.item_count === 1 ? "" : "s"}
+                          {store.urgent_count ? ` · ${store.urgent_count} urgent` : ""}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                          {store.next_needed_by && formatDay(store.next_needed_by) && (
+                            <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">
+                              needed by {formatDay(store.next_needed_by)}
+                            </span>
+                          )}
+                          {store.dog_food_included && (
+                            <span className="rounded-full bg-accent px-2.5 py-1 text-accent-foreground">
+                              dog food
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronRight className="mt-0.5 size-5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
                     </div>
-                    <ChevronRight className="mt-0.5 size-5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
-                  </div>
-                </Link>
-              ))}
-            </div>
-            <ShoppingItemsList enabled={isMember} />
-          </Section>
-        )}
+                  </Link>
+                ))}
+              </div>
+              <ShoppingItemsList enabled={isMember} />
+            </Section>
+          )}
 
-        {comingUp.length > 0 && (
-          <Section title="Coming up">
-            <div className="grid gap-3 sm:grid-cols-2">
-              {comingUp.map((item, i) => (
-                <AttentionCard key={item.entity_id ?? `upcoming-${i}`} item={item} />
-              ))}
-            </div>
-          </Section>
-        )}
+          {comingUp.length > 0 && (
+            <Section title="Coming up">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {comingUp.map((item, i) => (
+                  <AttentionCard key={item.entity_id ?? `upcoming-${i}`} item={item} />
+                ))}
+              </div>
+            </Section>
+          )}
 
-        <PetsSection enabled={isMember} />
+          <PetsSection enabled={isMember} />
 
-        <ProjectsSection enabled={isMember} hasAttention={hasProjectsAttention} />
+          <ProjectsSection enabled={isMember} hasAttention={hasProjectsAttention} />
 
-        {!hasAnything && (
-          <p className="text-sm text-muted-foreground">
-            Nothing needs you right now. Enjoy the quiet.
-          </p>
+          {!hasAnything && (
+            <p className="text-sm text-muted-foreground">
+              Nothing needs you right now. Enjoy the quiet.
+            </p>
+          )}
+        </div>
+
+        {useSoon.length > 0 && (
+          <aside className="lg:sticky lg:top-8">
+            <UseSoonCard items={useSoon} />
+          </aside>
         )}
       </div>
     );
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
       {header}
       <div className="mt-8">{body}</div>
     </main>
