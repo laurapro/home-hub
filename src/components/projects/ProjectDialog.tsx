@@ -26,15 +26,63 @@ import {
   useProjectAction,
   validateProject,
   type Project,
+  type ProjectStatus,
 } from "@/lib/projects";
-import { HOUSEHOLD_SLUG } from "@/lib/household";
+import { HOUSEHOLD_SLUG, HOUSEHOLD_TIMEZONE } from "@/lib/household";
 
 function toLocalInput(value: string | null): string {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: HOUSEHOLD_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}`;
+}
+
+function householdLocalInputToIso(value: string): string | undefined {
+  if (!value) return undefined;
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
+  if (!match) return undefined;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const desiredUtc = Date.UTC(year, month - 1, day, hour, minute);
+  let candidate = desiredUtc;
+
+  // Resolve the household wall time to an instant, including Chicago DST.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const rendered = new Intl.DateTimeFormat("en-CA", {
+      timeZone: HOUSEHOLD_TIMEZONE,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    }).formatToParts(new Date(candidate));
+    const values = Object.fromEntries(rendered.map((item) => [item.type, item.value]));
+    const renderedUtc = Date.UTC(
+      Number(values["year"]),
+      Number(values["month"]) - 1,
+      Number(values["day"]),
+      Number(values["hour"]),
+      Number(values["minute"]),
+    );
+    candidate += desiredUtc - renderedUtc;
+  }
+
+  return new Date(candidate).toISOString();
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -54,7 +102,7 @@ export function ProjectDialog({
   const isEdit = !!project;
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [status, setStatus] = useState<string>("action_required");
+  const [status, setStatus] = useState<ProjectStatus>("action_required");
   const [waitingOn, setWaitingOn] = useState("");
   const [lastAction, setLastAction] = useState("");
   const [nextAction, setNextAction] = useState("");
@@ -69,7 +117,11 @@ export function ProjectDialog({
   useEffect(() => {
     if (!open) return;
     setName(project?.name ?? "");
-    setStatus(PROJECT_STATUSES.includes(project?.status as never) ? project!.status : "action_required");
+    setStatus(
+      PROJECT_STATUSES.includes(project?.status as ProjectStatus)
+        ? (project?.status as ProjectStatus)
+        : "action_required",
+    );
     setWaitingOn(project?.waiting_on ?? "");
     setLastAction(project?.last_action ?? "");
     setNextAction(project?.next_action ?? "");
@@ -89,24 +141,30 @@ export function ProjectDialog({
     setValidationError(error);
     if (error) return;
 
-    const followUpIso = followUpAt ? new Date(followUpAt).toISOString() : undefined;
+    const followUpIso = householdLocalInputToIso(followUpAt);
     const shared = {
       p_household_slug: HOUSEHOLD_SLUG,
       p_name: name.trim(),
       p_status: status,
-      p_next_action: nextAction.trim() || undefined,
-      p_notes: notes.trim() || undefined,
+      ...(nextAction.trim() ? { p_next_action: nextAction.trim() } : {}),
+      ...(notes.trim() ? { p_notes: notes.trim() } : {}),
       ...(waitingOn.trim() ? { p_waiting_on: waitingOn.trim() } : {}),
       ...(followUpIso ? { p_follow_up_at: followUpIso } : {}),
     };
 
-    const args = isEdit
-      ? { ...shared, p_project_id: project!.id, p_last_action: lastAction.trim() || undefined }
-      : shared;
-
-    action.mutate(args as never, {
-      onSuccess: () => setOpen(false),
-    });
+    const options = { onSuccess: () => setOpen(false) };
+    if (project) {
+      update.mutate(
+        {
+          ...shared,
+          p_project_id: project.id,
+          ...(lastAction.trim() ? { p_last_action: lastAction.trim() } : {}),
+        },
+        options,
+      );
+    } else {
+      create.mutate(shared, options);
+    }
   }
 
   return (
@@ -137,7 +195,7 @@ export function ProjectDialog({
 
           <div className="space-y-2">
             <Label>Status</Label>
-            <Select value={status} onValueChange={setStatus}>
+            <Select value={status} onValueChange={(value) => setStatus(value as ProjectStatus)}>
               <SelectTrigger className="h-11">
                 <SelectValue />
               </SelectTrigger>
@@ -219,11 +277,7 @@ export function ProjectDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            className="h-11 w-full sm:w-auto"
-            disabled={action.isPending}
-            onClick={submit}
-          >
+          <Button className="h-11 w-full sm:w-auto" disabled={action.isPending} onClick={submit}>
             {action.isPending ? "Saving…" : isEdit ? "Save changes" : "Create project"}
           </Button>
         </DialogFooter>
