@@ -570,7 +570,10 @@ function HomePage() {
 
           {data.shopping.length > 0 && (
             <Section title="Shopping">
-              <Link to="/shopping" className={cn(cardClasses(undefined, true), "bg-shopping/70")}>
+              <Link
+                to="/shopping"
+                className={cn(cardClasses(undefined, true), "block bg-shopping/70")}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-foreground">Shopping list</p>
