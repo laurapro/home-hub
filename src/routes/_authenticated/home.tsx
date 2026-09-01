@@ -306,6 +306,9 @@ function HomePage() {
             />
           </>
         )}
+        <Button variant="ghost" size="sm" className="h-10" asChild>
+          <Link to="/kitchen">Kitchen mode</Link>
+        </Button>
         <Button variant="ghost" size="sm" className="h-10" onClick={handleSignOut}>
           Sign out
         </Button>
