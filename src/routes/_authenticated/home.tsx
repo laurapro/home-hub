@@ -612,7 +612,7 @@ function HomePage() {
         </div>
 
         {useSoon.length > 0 && (
-          <aside className="lg:sticky lg:top-8">
+          <aside>
             <UseSoonCard items={useSoon} />
           </aside>
         )}
