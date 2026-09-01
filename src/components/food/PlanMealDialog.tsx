@@ -57,7 +57,7 @@ export function PlanMealDialog({ enabled }: { enabled: boolean }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-10">
+        <Button size="sm" className="h-11">
           Plan meal
         </Button>
       </DialogTrigger>
@@ -82,7 +82,7 @@ export function PlanMealDialog({ enabled }: { enabled: boolean }) {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-10"
+                className="h-11"
                 onClick={() => setPlannedFor(todayKey())}
               >
                 Today
@@ -91,7 +91,7 @@ export function PlanMealDialog({ enabled }: { enabled: boolean }) {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-10"
+                className="h-11"
                 onClick={() => setPlannedFor(tomorrowKey())}
               >
                 Tomorrow

@@ -46,7 +46,7 @@ export function ProjectsSection({
             <Button
               size="sm"
               variant="ghost"
-              className="h-10 px-2"
+              className="h-11 px-2"
               onClick={() => setExpanded((value) => !value)}
               aria-expanded={expanded}
             >
@@ -86,7 +86,7 @@ export function ProjectsSection({
                     <ProjectDialog
                       project={project}
                       trigger={
-                        <Button size="sm" variant="outline" className="h-10">
+                        <Button size="sm" variant="outline" className="h-11">
                           Edit
                         </Button>
                       }

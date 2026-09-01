@@ -73,7 +73,7 @@ export function AddShoppingItemDialog({ enabled }: { enabled: boolean }) {
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="h-10">
+        <Button size="sm" variant="outline" className="h-11">
           Add shopping item
         </Button>
       </DialogTrigger>

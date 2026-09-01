@@ -87,7 +87,7 @@ export function CorrectInventoryDialog({ enabled }: { enabled: boolean }) {
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="h-10">
+        <Button size="sm" variant="outline" className="h-11">
           Correct inventory
         </Button>
       </DialogTrigger>

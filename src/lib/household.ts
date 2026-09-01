@@ -99,14 +99,16 @@ export function severityTone(severity: string | null): "critical" | "due" | "cal
 }
 
 function dateKey(offsetDays: number): string {
-  const now = new Date();
-  now.setDate(now.getDate() + offsetDays);
-  return new Intl.DateTimeFormat("en-CA", {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: HOUSEHOLD_TIMEZONE,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(now);
+  });
+  const householdToday = formatter.format(new Date());
+  const date = new Date(`${householdToday}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return formatter.format(date);
 }
 
 export function todayKey() {
@@ -145,8 +147,8 @@ export function formatCompactDate(value: string | null): string | null {
   // Detect if this is a DATE-only string (YYYY-MM-DD) or ISO timestamp
   const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
 
-  // Parse the date in America/Chicago timezone
-  const date = new Date(isDateOnly ? `${value}T00:00:00Z` : value);
+  // Noon UTC stays on the same calendar date in Chicago, including across DST.
+  const date = new Date(isDateOnly ? `${value}T12:00:00Z` : value);
   if (Number.isNaN(date.getTime())) return null;
 
   // Get components in the household timezone

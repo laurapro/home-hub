@@ -361,17 +361,17 @@ function HomePage() {
             <AddShoppingItemDialog enabled={isMember} />
             <ProjectDialog
               trigger={
-                <Button variant="outline" size="sm" className="h-10">
+                <Button variant="outline" size="sm" className="h-11">
                   New project
                 </Button>
               }
             />
           </>
         )}
-        <Button variant="ghost" size="sm" className="h-10" asChild>
+        <Button variant="ghost" size="sm" className="h-11" asChild>
           <Link to="/kitchen">Kitchen mode</Link>
         </Button>
-        <Button variant="ghost" size="sm" className="h-10" onClick={handleSignOut}>
+        <Button variant="ghost" size="sm" className="h-11" onClick={handleSignOut}>
           Sign out
         </Button>
       </div>

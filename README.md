@@ -3,6 +3,7 @@
 Build a new app named Household OS — Lovable Web App V1.
 
 Architecture is fixed:
+
 - Existing external Supabase project household-os is the canonical data/state source.
 - Existing local n8n remains responsible for automations/background jobs.
 - Lovable is UI only.
@@ -15,6 +16,7 @@ Milestone 1 ONLY: authenticated, read-only Household Home for household slug `ho
 Use Supabase Auth and the existing connected external Supabase project. Browser code may use only the Supabase project URL plus its publishable/anon client key; never use a service-role key.
 
 Read data ONLY through these authenticated RPCs that already exist in Supabase:
+
 - get_lovable_today_timeline('home')
 - get_lovable_household_attention('home')
 - get_lovable_home_meals('home')
@@ -23,6 +25,7 @@ Read data ONLY through these authenticated RPCs that already exist in Supabase:
 These RPCs enforce household_memberships against auth.uid(). Do not query the underlying Home views directly.
 
 UX should be calm, household-oriented, touch-friendly, responsive, and action/time oriented rather than vertical-oriented. Build:
+
 1. Auth screen for sign-in. No public dashboard data before authentication.
 2. Home route after sign-in.
 3. Today — synchronized Calendar occurrences plus nanny departure routine, sorted by time. Nanny departure is informational.
