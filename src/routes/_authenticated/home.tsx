@@ -332,8 +332,18 @@ function HomePage() {
     navigate({ to: "/auth", replace: true });
   }
 
-  const needsYou = data.attention.filter(isNeedsYou);
-  const comingUp = data.attention.filter(isUpcoming).slice(0, 4);
+  // Shopping-list items live in the Shopping section; inventory "use soon"
+  // nudges get their own compact card. Neither belongs in Needs you.
+  const isShoppingListItem = (item: AttentionItem) => item.entity_type === "shopping_item";
+  const isUseSoon = (item: AttentionItem) => item.entity_type === "inventory";
+
+  const needsYou = data.attention.filter(
+    (item) => isNeedsYou(item) && !isShoppingListItem(item) && !isUseSoon(item),
+  );
+  const useSoon = data.attention.filter(isUseSoon);
+  const comingUp = data.attention
+    .filter((item) => isUpcoming(item) && !isShoppingListItem(item) && !isUseSoon(item))
+    .slice(0, 4);
   const hasProjectsAttention = data.attention.some((item) => item.domain === "projects");
   const tonight = data.meals.filter((m) => m.planned_for === todayKey());
   const tomorrow = data.meals.filter((m) => m.planned_for === tomorrowKey());
