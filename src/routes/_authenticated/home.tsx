@@ -316,6 +316,40 @@ function MealCardContent({ meal }: { meal: MealItem }) {
   );
 }
 
+/** Compact side card: inventory the household could use up soon. */
+function UseSoonCard({ items }: { items: AttentionItem[] }) {
+  return (
+    <section className="space-y-3">
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        Use soon
+      </h2>
+      <div className="rounded-xl border bg-card p-4 shadow-sm">
+        <ul className="divide-y">
+          {items.map((item, i) => (
+            <li key={item.entity_id ?? `use-soon-${i}`} className="py-2 first:pt-0 last:pb-0">
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="break-words text-sm font-medium text-foreground">
+                  {item.title ?? item.attention_type}
+                </p>
+                {item.due_at && (
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {formatDay(item.due_at)}
+                  </span>
+                )}
+              </div>
+              {item.human_action && (
+                <p className="mt-0.5 break-words text-xs text-muted-foreground">
+                  {item.human_action}
+                </p>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 function HomePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
