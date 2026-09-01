@@ -536,17 +536,24 @@ function HomePage() {
 
         <ProjectsSection enabled={isMember} hasAttention={hasProjectsAttention} />
 
-        {!hasAnything && (
-          <p className="text-sm text-muted-foreground">
-            Nothing needs you right now. Enjoy the quiet.
-          </p>
+          {!hasAnything && (
+            <p className="text-sm text-muted-foreground">
+              Nothing needs you right now. Enjoy the quiet.
+            </p>
+          )}
+        </div>
+
+        {useSoon.length > 0 && (
+          <aside className="lg:sticky lg:top-8">
+            <UseSoonCard items={useSoon} />
+          </aside>
         )}
       </div>
     );
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
       {header}
       <div className="mt-8">{body}</div>
     </main>
