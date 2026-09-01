@@ -1,18 +1,12 @@
 import { useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { ProjectDialog } from "@/components/projects/ProjectDialog";
-import { completeProject, useProjectAction, useProjects, type Project } from "@/lib/projects";
-import { HOUSEHOLD_SLUG, formatDayTime } from "@/lib/household";
+import { ProjectCompleteButton } from "@/components/projects/ProjectCompleteButton";
+import { useProjects } from "@/lib/projects";
+import { formatDayTime } from "@/lib/household";
+import { cn, getInteractiveCardClasses } from "@/lib/utils";
 
 const STATUS_LABELS: Record<string, string> = {
   action_required: "Action required",
@@ -29,10 +23,8 @@ export function ProjectsSection({
   hasAttention: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [completing, setCompleting] = useState<Project | null>(null);
 
   const projects = useProjects(enabled);
-  const complete = useProjectAction(completeProject, "Project completed");
 
   const list = projects.data ?? [];
 
@@ -66,19 +58,31 @@ export function ProjectsSection({
             {(expanded ? list : list.slice(0, 2)).map((project) => {
               const followUp = formatDayTime(project.follow_up_at);
               return (
-                <div key={project.id} className="rounded-xl border bg-card p-4 shadow-sm">
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <p className="font-medium text-foreground">{project.name}</p>
-                    <span className="rounded-full bg-secondary px-2.5 py-1 text-xs text-secondary-foreground">
-                      {STATUS_LABELS[project.status] ?? project.status}
-                    </span>
-                  </div>
-                  <div className="mt-1 space-y-0.5 text-sm text-muted-foreground">
-                    {project.next_action && <p>Next: {project.next_action}</p>}
-                    {project.waiting_on && <p>Waiting on: {project.waiting_on}</p>}
-                    {followUp && <p>Follow up {followUp}</p>}
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                <div
+                  key={project.id}
+                  className="overflow-hidden rounded-xl border bg-card shadow-sm"
+                >
+                  <Link
+                    to="/projects/$projectId"
+                    params={{ projectId: project.id }}
+                    className={cn("group flex gap-3 p-4", getInteractiveCardClasses())}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <p className="break-words font-medium text-foreground">{project.name}</p>
+                        <span className="rounded-full bg-secondary px-2.5 py-1 text-xs text-secondary-foreground">
+                          {STATUS_LABELS[project.status] ?? project.status}
+                        </span>
+                      </div>
+                      <div className="mt-1 space-y-0.5 text-sm text-muted-foreground">
+                        {project.next_action && <p>Next: {project.next_action}</p>}
+                        {project.waiting_on && <p>Waiting on: {project.waiting_on}</p>}
+                        {followUp && <p>Follow up {followUp}</p>}
+                      </div>
+                    </div>
+                    <ChevronRight className="mt-0.5 size-5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+                  </Link>
+                  <div className="flex flex-wrap gap-2 border-t px-4 py-3">
                     <ProjectDialog
                       project={project}
                       trigger={
@@ -87,55 +91,12 @@ export function ProjectsSection({
                         </Button>
                       }
                     />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-10"
-                      disabled={complete.isPending}
-                      onClick={() => setCompleting(project)}
-                    >
-                      Complete
-                    </Button>
+                    <ProjectCompleteButton project={project} />
                   </div>
                 </div>
               );
             })}
           </div>
-
-          <AlertDialog
-            open={completing !== null}
-            onOpenChange={(open) => !open && setCompleting(null)}
-          >
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Complete “{completing?.name}”?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  The project will be marked complete in the household record. This cannot be undone
-                  from here.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={complete.isPending}>Keep active</AlertDialogCancel>
-                <AlertDialogAction
-                  disabled={complete.isPending}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    if (!completing) return;
-                    complete.mutate(
-                      {
-                        p_household_slug: HOUSEHOLD_SLUG,
-                        p_project_id: completing.id,
-                        p_confirm: true,
-                      },
-                      { onSuccess: () => setCompleting(null) },
-                    );
-                  }}
-                >
-                  {complete.isPending ? "Completing…" : "Complete project"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
       )}
     </section>

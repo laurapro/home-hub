@@ -51,8 +51,16 @@ function ItemRow({ item, children }: { item: ShoppingItem; children?: React.Reac
   );
 }
 
-export function ShoppingItemsList({ enabled }: { enabled: boolean }) {
-  const [expanded, setExpanded] = useState(false);
+export function ShoppingItemsList({
+  enabled,
+  defaultExpanded = false,
+  showToggle = true,
+}: {
+  enabled: boolean;
+  defaultExpanded?: boolean;
+  showToggle?: boolean;
+}) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const [confirm, setConfirm] = useState<PendingAction>(null);
 
   const items = useShoppingItems(enabled && expanded);
@@ -79,15 +87,17 @@ export function ShoppingItemsList({ enabled }: { enabled: boolean }) {
 
   return (
     <div className="space-y-3">
-      <Button
-        size="sm"
-        variant="ghost"
-        className="h-10 px-2"
-        onClick={() => setExpanded((v) => !v)}
-        aria-expanded={expanded}
-      >
-        {expanded ? "Hide items" : "View items"}
-      </Button>
+      {showToggle && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-11 px-2"
+          onClick={() => setExpanded((value) => !value)}
+          aria-expanded={expanded}
+        >
+          {expanded ? "Hide items" : "View items"}
+        </Button>
+      )}
 
       {expanded && (
         <div className="space-y-4">

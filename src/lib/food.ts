@@ -7,6 +7,7 @@ import { HOUSEHOLD_SLUG } from "./household";
 type Fns = Database["public"]["Functions"];
 export type RecipeOption = Fns["get_lovable_food_recipes"]["Returns"][number];
 export type InventoryOption = Fns["get_lovable_food_inventory"]["Returns"][number];
+export type PlannedMeal = Fns["get_lovable_planned_meal"]["Returns"][number];
 
 /** Canonical JSON shapes returned by get_lovable_home_meals. */
 export type MissingItem = { item_id: string; item: string; quantity?: number; unit?: string };
@@ -49,6 +50,21 @@ export function useFoodInventory(enabled: boolean) {
   });
 }
 
+export function usePlannedMeal(plannedMealId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["planned-meal", HOUSEHOLD_SLUG, plannedMealId],
+    enabled: enabled && plannedMealId !== "",
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_lovable_planned_meal", {
+        p_household_slug: HOUSEHOLD_SLUG,
+        p_planned_meal_id: plannedMealId,
+      });
+      if (error) throw new Error(error.message);
+      return (data?.[0] as PlannedMeal | undefined) ?? null;
+    },
+  });
+}
+
 /** All canonical Home reads plus Food helper reads. */
 const REFRESH_KEYS = [
   "today-timeline",
@@ -57,6 +73,7 @@ const REFRESH_KEYS = [
   "shopping-summary",
   "food-recipes",
   "food-inventory",
+  "planned-meal",
 ];
 
 /**
