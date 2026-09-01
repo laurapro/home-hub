@@ -128,9 +128,7 @@ function DinnerCard({ meal }: { meal: MealItem }) {
           </span>
         )}
       </div>
-      {meal.notes && (
-        <p className="mt-3 break-words text-xl text-muted-foreground">{meal.notes}</p>
-      )}
+      {meal.notes && <p className="mt-3 break-words text-xl text-muted-foreground">{meal.notes}</p>}
     </KitchenCard>
   );
 }
@@ -238,8 +236,8 @@ function KitchenPage() {
 
         {storeCount > 0 && (
           <p className="text-xl text-muted-foreground">
-            Shopping: {storeCount} item{storeCount === 1 ? "" : "s"} across{" "}
-            {data.shopping.length} store{data.shopping.length === 1 ? "" : "s"}
+            Shopping: {storeCount} item{storeCount === 1 ? "" : "s"} across {data.shopping.length}{" "}
+            store{data.shopping.length === 1 ? "" : "s"}
           </p>
         )}
 
