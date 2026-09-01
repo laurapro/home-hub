@@ -477,6 +477,22 @@ function HomePage() {
       </Card>
     );
   } else {
+    const shopping = data.shopping.reduce(
+      (summary, store) => {
+        summary.itemCount += store.item_count ?? 0;
+        summary.urgentCount += store.urgent_count ?? 0;
+        summary.dogFoodIncluded ||= !!store.dog_food_included;
+        if (
+          store.next_needed_by &&
+          (!summary.nextNeededBy || store.next_needed_by < summary.nextNeededBy)
+        ) {
+          summary.nextNeededBy = store.next_needed_by;
+        }
+        return summary;
+      },
+      { itemCount: 0, urgentCount: 0, dogFoodIncluded: false, nextNeededBy: null as string | null },
+    );
+
     const hasAnything =
       data.timeline.length > 0 ||
       needsYou.length > 0 ||
@@ -554,38 +570,30 @@ function HomePage() {
 
           {data.shopping.length > 0 && (
             <Section title="Shopping">
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {data.shopping.map((store, i) => (
-                  <Link
-                    key={store.store_name ?? `store-${i}`}
-                    to="/shopping"
-                    className={cn(cardClasses(undefined, true), "bg-shopping/70")}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-foreground">{store.store_name ?? "Store"}</p>
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {store.item_count ?? 0} item{store.item_count === 1 ? "" : "s"}
-                          {store.urgent_count ? ` · ${store.urgent_count} urgent` : ""}
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                          {store.next_needed_by && formatDay(store.next_needed_by) && (
-                            <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">
-                              needed by {formatDay(store.next_needed_by)}
-                            </span>
-                          )}
-                          {store.dog_food_included && (
-                            <span className="rounded-full bg-accent px-2.5 py-1 text-accent-foreground">
-                              dog food
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <ChevronRight className="mt-0.5 size-5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+              <Link to="/shopping" className={cn(cardClasses(undefined, true), "bg-shopping/70")}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-foreground">Shopping list</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {shopping.itemCount} item{shopping.itemCount === 1 ? "" : "s"}
+                      {shopping.urgentCount ? ` · ${shopping.urgentCount} urgent` : ""}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                      {shopping.nextNeededBy && formatDay(shopping.nextNeededBy) && (
+                        <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">
+                          needed by {formatDay(shopping.nextNeededBy)}
+                        </span>
+                      )}
+                      {shopping.dogFoodIncluded && (
+                        <span className="rounded-full bg-accent px-2.5 py-1 text-accent-foreground">
+                          dog food
+                        </span>
+                      )}
                     </div>
-                  </Link>
-                ))}
-              </div>
+                  </div>
+                  <ChevronRight className="mt-0.5 size-5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+                </div>
+              </Link>
               <ShoppingItemsList enabled={isMember} />
             </Section>
           )}

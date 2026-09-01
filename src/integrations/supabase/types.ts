@@ -4997,7 +4997,7 @@ export type Database = {
           p_name: string
           p_priority?: string
           p_quantity?: number
-          p_store_id?: string
+          p_store_id?: string | null
           p_unit?: string
         }
         Returns: {
@@ -5520,6 +5520,37 @@ export type Database = {
       }
       lovable_skip_shopping_item: {
         Args: { p_household_slug: string; p_shopping_item_id: string }
+        Returns: {
+          created_at: string
+          custom_name: string | null
+          household_id: string
+          id: string
+          item_id: string | null
+          needed_by: string | null
+          priority: string
+          purchase_id: string | null
+          purchased_at: string | null
+          quantity: number | null
+          reason: string | null
+          source: string | null
+          status: string
+          store_id: string | null
+          unit: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "shopping_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      lovable_set_shopping_item_store: {
+        Args: {
+          p_household_slug: string
+          p_shopping_item_id: string
+          p_store_id?: string | null
+        }
         Returns: {
           created_at: string
           custom_name: string | null
