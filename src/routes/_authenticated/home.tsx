@@ -11,6 +11,7 @@ import { ShoppingItemsList } from "@/components/shopping/ShoppingItemsList";
 import { ProjectDialog } from "@/components/projects/ProjectDialog";
 import { ProjectsSection } from "@/components/projects/ProjectsSection";
 import { PetsSection } from "@/components/pets/PetsSection";
+import { InlineAttentionAction } from "@/components/home/InlineAttentionAction";
 import {
   formatDay,
   formatDayTime,
@@ -27,7 +28,7 @@ import {
 } from "@/lib/household";
 import { cn, getInteractiveCardClasses } from "@/lib/utils";
 import { useProjects } from "@/lib/projects";
-import { usePetsAttention } from "@/lib/pets";
+import { usePetsAttention, type PetAttention } from "@/lib/pets";
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
@@ -91,7 +92,15 @@ function cardClasses(tone?: string, interactive = false) {
   );
 }
 
-function AttentionCard({ item }: { item: AttentionItem }) {
+function AttentionCard({
+  item,
+  inlineAction = false,
+  petAttention,
+}: {
+  item: AttentionItem;
+  inlineAction?: boolean;
+  petAttention?: PetAttention | undefined;
+}) {
   const tone = severityTone(item.severity);
   const content = (
     <div className="flex items-start justify-between gap-3">
@@ -117,58 +126,111 @@ function AttentionCard({ item }: { item: AttentionItem }) {
     </div>
   );
 
+  const action = inlineAction ? (
+    <InlineAttentionAction item={item} petAttention={petAttention} />
+  ) : null;
+
+  const linkedCard = (link: React.ReactNode) => (
+    <div className={cn(cardClasses(tone), "flex overflow-hidden p-0")}>
+      {action}
+      {link}
+    </div>
+  );
+
   if (item.domain === "projects" && item.entity_id) {
-    return (
+    return linkedCard(
       <Link
         to="/projects/$projectId"
         params={{ projectId: item.entity_id }}
-        className={cardClasses(tone, true)}
+        className={cn(
+          "min-w-0 flex-1 p-4",
+          cardClasses(undefined, true),
+          "rounded-none border-0 shadow-none",
+        )}
       >
         {content}
-      </Link>
+      </Link>,
     );
   }
   if (item.domain === "pets") {
-    return (
-      <Link to="/pets" className={cardClasses(tone, true)}>
+    return linkedCard(
+      <Link
+        to="/pets"
+        className={cn(
+          "min-w-0 flex-1 p-4",
+          cardClasses(undefined, true),
+          "rounded-none border-0 shadow-none",
+        )}
+      >
         {content}
-      </Link>
+      </Link>,
     );
   }
   if (item.domain === "shopping") {
-    return (
-      <Link to="/shopping" className={cardClasses(tone, true)}>
+    return linkedCard(
+      <Link
+        to="/shopping"
+        className={cn(
+          "min-w-0 flex-1 p-4",
+          cardClasses(undefined, true),
+          "rounded-none border-0 shadow-none",
+        )}
+      >
         {content}
-      </Link>
+      </Link>,
     );
   }
   if (item.domain === "food" && item.entity_type === "planned_meal" && item.entity_id) {
-    return (
+    return linkedCard(
       <Link
         to="/meals/$plannedMealId"
         params={{ plannedMealId: item.entity_id }}
-        className={cardClasses(tone, true)}
+        className={cn(
+          "min-w-0 flex-1 p-4",
+          cardClasses(undefined, true),
+          "rounded-none border-0 shadow-none",
+        )}
       >
         {content}
-      </Link>
+      </Link>,
+    );
+  }
+
+  if (item.domain === "food" && item.entity_type === "shopping_item" && item.entity_id) {
+    return linkedCard(
+      <Link
+        to="/shopping"
+        className={cn(
+          "min-w-0 flex-1 p-4",
+          cardClasses(undefined, true),
+          "rounded-none border-0 shadow-none",
+        )}
+      >
+        {content}
+      </Link>,
     );
   }
 
   return (
-    <Card tone={tone}>
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-medium text-foreground">{item.title ?? item.attention_type}</p>
-        {item.due_at && (
-          <span className="text-xs text-muted-foreground">{formatDayTime(item.due_at)}</span>
+    <div className={cn(cardClasses(tone), action && "flex p-0")}>
+      {action}
+      <div className={cn("min-w-0 flex-1", action && "p-4")}>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <p className="font-medium text-foreground">{item.title ?? item.attention_type}</p>
+          {item.due_at && (
+            <span className="text-xs text-muted-foreground">{formatDayTime(item.due_at)}</span>
+          )}
+        </div>
+        {item.human_action && (
+          <p className="mt-1 text-sm text-muted-foreground">{item.human_action}</p>
+        )}
+        {item.domain && (
+          <p className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">
+            {item.domain}
+          </p>
         )}
       </div>
-      {item.human_action && (
-        <p className="mt-1 text-sm text-muted-foreground">{item.human_action}</p>
-      )}
-      {item.domain && (
-        <p className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">{item.domain}</p>
-      )}
-    </Card>
+    </div>
   );
 }
 
@@ -390,7 +452,12 @@ function HomePage() {
           <Section title="Needs you">
             <div className="grid gap-3 sm:grid-cols-2">
               {needsYou.map((item, i) => (
-                <AttentionCard key={item.entity_id ?? `needs-${i}`} item={item} />
+                <AttentionCard
+                  key={item.entity_id ?? `needs-${i}`}
+                  item={item}
+                  inlineAction
+                  petAttention={pets.data?.find((pet) => pet.entity_id === item.entity_id)}
+                />
               ))}
             </div>
           </Section>
