@@ -423,12 +423,14 @@ function HomePage() {
       tonight.length + tomorrow.length > 0 ||
       data.shopping.length > 0 ||
       comingUp.length > 0 ||
+      useSoon.length > 0 ||
       (projects.data?.length ?? 0) > 0 ||
       (pets.data?.length ?? 0) > 0 ||
       hasProjectsAttention;
 
     body = (
-      <div className="space-y-8">
+      <div className="grid items-start gap-8 lg:grid-cols-3">
+        <div className="space-y-8 lg:col-span-2">
         {data.timeline.length > 0 && (
           <Section title="Today">
             <div className="space-y-2">
