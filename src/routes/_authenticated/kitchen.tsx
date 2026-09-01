@@ -57,13 +57,22 @@ function KitchenSection({ title, children }: { title: string; children: React.Re
   );
 }
 
-function KitchenCard({ children, tone }: { children: React.ReactNode; tone?: string }) {
+function KitchenCard({
+  children,
+  tone,
+  className,
+}: {
+  children: React.ReactNode;
+  tone?: string;
+  className?: string;
+}) {
   return (
     <div
       className={cn(
         "rounded-2xl border bg-card p-6 shadow-sm sm:p-8",
         tone === "critical" && "border-l-8 border-l-critical",
         tone === "due" && "border-l-8 border-l-warning",
+        className,
       )}
     >
       {children}
@@ -95,7 +104,7 @@ function AttentionRow({ item }: { item: AttentionItem }) {
 
 function DinnerCard({ meal }: { meal: MealItem }) {
   return (
-    <KitchenCard>
+    <KitchenCard className="bg-food/55">
       <div className="flex flex-wrap items-baseline gap-x-4">
         <p className="break-words text-3xl font-semibold text-foreground sm:text-4xl">
           {meal.recipe_name ?? meal.plan_type ?? "Planned meal"}
@@ -177,29 +186,38 @@ function KitchenPage() {
         {data.timeline.length > 0 && (
           <KitchenSection title="Today">
             <div className="space-y-4">
-              {data.timeline.map((item, i) => (
-                <KitchenCard key={item.entity_id ?? `timeline-${i}`}>
-                  <div className="flex flex-wrap items-baseline justify-between gap-3">
-                    <p className="break-words text-2xl font-semibold text-foreground sm:text-3xl">
-                      {item.title}
-                    </p>
-                    <span className="text-xl tabular-nums text-muted-foreground sm:text-2xl">
-                      {item.all_day ? "All day" : formatTime(item.starts_at)}
-                      {!item.all_day && item.ends_at ? ` – ${formatTime(item.ends_at)}` : ""}
-                    </span>
-                  </div>
-                  {(item.location || item.item_type !== "calendar_event") && (
+              {data.timeline.map((item, i) => {
+                const isCalendar = item.item_type === "calendar_event";
+                return (
+                  <KitchenCard
+                    key={item.entity_id ?? `timeline-${i}`}
+                    className={isCalendar ? "bg-calendar/55" : "bg-routine/55"}
+                  >
+                    <div className="flex flex-wrap items-baseline justify-between gap-3">
+                      <p className="break-words text-2xl font-semibold text-foreground sm:text-3xl">
+                        {item.title}
+                      </p>
+                      <span className="text-xl tabular-nums text-muted-foreground sm:text-2xl">
+                        {item.all_day ? "All day" : formatTime(item.starts_at)}
+                        {!item.all_day && item.ends_at ? ` – ${formatTime(item.ends_at)}` : ""}
+                      </span>
+                    </div>
                     <div className="mt-2 flex flex-wrap items-center gap-3 text-lg text-muted-foreground">
                       {item.location && <span>{item.location}</span>}
-                      {item.item_type !== "calendar_event" && (
-                        <span className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground">
-                          informational
-                        </span>
-                      )}
+                      <span
+                        className={cn(
+                          "rounded-full px-3 py-1 font-medium",
+                          isCalendar
+                            ? "bg-calendar text-calendar-foreground"
+                            : "bg-routine text-routine-foreground",
+                        )}
+                      >
+                        {isCalendar ? "Calendar" : "Routine"}
+                      </span>
                     </div>
-                  )}
-                </KitchenCard>
-              ))}
+                  </KitchenCard>
+                );
+              })}
             </div>
           </KitchenSection>
         )}

@@ -27,7 +27,7 @@ type PendingAction = { kind: "complete" | "skip"; item: ShoppingItem } | null;
 function ItemRow({ item, children }: { item: ShoppingItem; children?: React.ReactNode }) {
   const label = item.item_name ?? item.custom_name ?? "Item";
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-card p-3">
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-shopping/40 p-3">
       <div className="min-w-0">
         <p className="font-medium text-foreground">
           {label}
