@@ -65,7 +65,7 @@ function PetsCard({ item, navigable }: { item: PetAttention; navigable: boolean 
   );
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-xl border bg-pets/45 shadow-sm">
+    <div className="min-w-0 overflow-hidden rounded-xl border bg-pets/70 shadow-sm">
       {navigable ? (
         <Link
           to="/pets"

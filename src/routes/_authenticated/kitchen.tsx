@@ -104,7 +104,7 @@ function AttentionRow({ item }: { item: AttentionItem }) {
 
 function DinnerCard({ meal }: { meal: MealItem }) {
   return (
-    <KitchenCard className="bg-food/55">
+    <KitchenCard className="bg-food/75">
       <div className="flex flex-wrap items-baseline gap-x-4">
         <p className="break-words text-3xl font-semibold text-foreground sm:text-4xl">
           {meal.recipe_name ?? meal.plan_type ?? "Planned meal"}
@@ -191,7 +191,7 @@ function KitchenPage() {
                 return (
                   <KitchenCard
                     key={item.entity_id ?? `timeline-${i}`}
-                    className={isCalendar ? "bg-calendar/55" : "bg-routine/55"}
+                    className={isCalendar ? "bg-calendar/75" : "bg-routine/75"}
                   >
                     <div className="flex flex-wrap items-baseline justify-between gap-3">
                       <p className="break-words text-2xl font-semibold text-foreground sm:text-3xl">
@@ -269,8 +269,8 @@ function KitchenPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-6 py-8 sm:px-10 sm:py-12">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+    <main className="mx-auto w-full max-w-6xl px-6 pb-8 sm:px-10 sm:pb-12">
+      <header className="sticky top-0 z-40 -mx-6 flex flex-wrap items-end justify-between gap-4 border-b bg-background/95 px-6 py-5 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:-mx-10 sm:px-10">
         <div>
           <p className="text-5xl font-semibold tabular-nums tracking-tight text-foreground sm:text-7xl">
             {now
