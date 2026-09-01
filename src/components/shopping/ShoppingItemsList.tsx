@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -15,16 +22,32 @@ import {
   isOpenShoppingItem,
   isRecentlyResolved,
   restoreShoppingItem,
+  setShoppingItemStore,
   skipShoppingItem,
   useShoppingAction,
   useShoppingItems,
+  useStores,
   type ShoppingItem,
+  type Store,
 } from "@/lib/shopping";
 import { HOUSEHOLD_SLUG, formatDay } from "@/lib/household";
 
 type PendingAction = { kind: "complete" | "skip"; item: ShoppingItem } | null;
+const NO_STORE = "__none__";
 
-function ItemRow({ item, children }: { item: ShoppingItem; children?: React.ReactNode }) {
+function ItemRow({
+  item,
+  stores,
+  storeBusy,
+  onStoreChange,
+  children,
+}: {
+  item: ShoppingItem;
+  stores: Store[];
+  storeBusy: boolean;
+  onStoreChange: (item: ShoppingItem, storeId: string) => void;
+  children?: React.ReactNode;
+}) {
   const label = item.item_name ?? item.custom_name ?? "Item";
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-shopping/70 p-3">
@@ -46,7 +69,26 @@ function ItemRow({ item, children }: { item: ShoppingItem; children?: React.Reac
           )}
         </div>
       </div>
-      {children && <div className="flex flex-wrap gap-2">{children}</div>}
+      <div className="flex flex-wrap items-center gap-2">
+        <Select
+          value={item.store_id ?? NO_STORE}
+          onValueChange={(value) => onStoreChange(item, value)}
+          disabled={storeBusy}
+        >
+          <SelectTrigger className="h-11 w-[150px] bg-background" aria-label={`Store for ${label}`}>
+            <SelectValue placeholder="Uncategorized" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NO_STORE}>Uncategorized</SelectItem>
+            {stores.map((store) => (
+              <SelectItem key={store.id} value={store.id}>
+                {store.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {children}
+      </div>
     </div>
   );
 }
@@ -67,7 +109,9 @@ export function ShoppingItemsList({
   const complete = useShoppingAction(completeShoppingItem, "Marked as purchased");
   const skip = useShoppingAction(skipShoppingItem, "Skipped");
   const restore = useShoppingAction(restoreShoppingItem, "Restored to list");
-  const busy = complete.isPending || skip.isPending || restore.isPending;
+  const setStore = useShoppingAction(setShoppingItemStore, "Store updated");
+  const stores = useStores(enabled && expanded);
+  const busy = complete.isPending || skip.isPending || restore.isPending || setStore.isPending;
 
   const all = items.data ?? [];
   const open = all.filter(isOpenShoppingItem);
@@ -83,6 +127,14 @@ export function ShoppingItemsList({
     };
     if (action.kind === "complete") complete.mutate(args);
     if (action.kind === "skip") skip.mutate(args);
+  }
+
+  function changeStore(item: ShoppingItem, storeId: string) {
+    setStore.mutate({
+      p_household_slug: HOUSEHOLD_SLUG,
+      p_shopping_item_id: item.id,
+      p_store_id: storeId === NO_STORE ? null : storeId,
+    });
   }
 
   return (
@@ -103,13 +155,22 @@ export function ShoppingItemsList({
         <div className="space-y-4">
           {items.isPending && <p className="text-sm text-muted-foreground">Loading items…</p>}
           {items.error && <p className="text-sm text-critical">{(items.error as Error).message}</p>}
+          {stores.error && (
+            <p className="text-sm text-critical">{(stores.error as Error).message}</p>
+          )}
 
           {!items.isPending && !items.error && (
             <>
               {open.length > 0 ? (
                 <div className="space-y-2">
                   {open.map((item) => (
-                    <ItemRow key={item.id} item={item}>
+                    <ItemRow
+                      key={item.id}
+                      item={item}
+                      stores={stores.data ?? []}
+                      storeBusy={setStore.isPending}
+                      onStoreChange={changeStore}
+                    >
                       <Button
                         size="sm"
                         className="h-11"
@@ -140,7 +201,13 @@ export function ShoppingItemsList({
                     Recently purchased or skipped
                   </p>
                   {recent.map((item) => (
-                    <ItemRow key={item.id} item={item}>
+                    <ItemRow
+                      key={item.id}
+                      item={item}
+                      stores={stores.data ?? []}
+                      storeBusy={setStore.isPending}
+                      onStoreChange={changeStore}
+                    >
                       <Button
                         size="sm"
                         variant="outline"

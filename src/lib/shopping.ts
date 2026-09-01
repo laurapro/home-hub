@@ -76,6 +76,8 @@ export const skipShoppingItem = (args: Fns["lovable_skip_shopping_item"]["Args"]
   rpc("lovable_skip_shopping_item", args);
 export const restoreShoppingItem = (args: Fns["lovable_restore_shopping_item"]["Args"]) =>
   rpc("lovable_restore_shopping_item", args);
+export const setShoppingItemStore = (args: Fns["lovable_set_shopping_item_store"]["Args"]) =>
+  rpc("lovable_set_shopping_item_store", args);
 
 const DONE_STATUSES = new Set(["purchased", "skipped", "completed"]);
 
