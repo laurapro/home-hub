@@ -5189,6 +5189,26 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_lovable_pets_attention: {
+        Args: { p_household_slug?: string }
+        Returns: {
+          attention_type: string
+          can_mark_given: boolean
+          due_at: string
+          entity_id: string
+          entity_type: string
+          human_action: string
+          medication_name: string
+          metadata: Json
+          order_by_date: string
+          pet_id: string
+          pet_name: string
+          quantity_remaining: number
+          quantity_unit: string
+          scheduled_for: string
+          severity: string
+        }[]
+      }
       get_lovable_projects: {
         Args: { p_household_slug?: string; p_include_complete?: boolean }
         Returns: {
@@ -5426,6 +5446,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      lovable_mark_pet_medication_given: {
+        Args: {
+          p_confirm: boolean
+          p_household_slug: string
+          p_pet_medication_id: string
+          p_scheduled_for: string
+        }
+        Returns: Json
       }
       lovable_plan_food_meal: {
         Args: {

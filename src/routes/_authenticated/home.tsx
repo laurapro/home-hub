@@ -10,6 +10,7 @@ import { AddShoppingItemDialog } from "@/components/shopping/AddShoppingItemDial
 import { ShoppingItemsList } from "@/components/shopping/ShoppingItemsList";
 import { ProjectDialog } from "@/components/projects/ProjectDialog";
 import { ProjectsSection } from "@/components/projects/ProjectsSection";
+import { PetsSection } from "@/components/pets/PetsSection";
 import {
   formatDay,
   formatDayTime,
@@ -26,6 +27,7 @@ import {
 } from "@/lib/household";
 import { getInteractiveCardClasses } from "@/lib/utils";
 import { useProjects } from "@/lib/projects";
+import { usePetsAttention } from "@/lib/pets";
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
@@ -181,6 +183,7 @@ function HomePage() {
   const isMember = !!membership.data;
   const data = useHomeData(isMember);
   const projects = useProjects(isMember);
+  const pets = usePetsAttention(isMember);
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
@@ -268,6 +271,7 @@ function HomePage() {
       data.shopping.length > 0 ||
       comingUp.length > 0 ||
       (projects.data?.length ?? 0) > 0 ||
+      (pets.data?.length ?? 0) > 0 ||
       hasProjectsAttention;
 
     body = (
@@ -358,6 +362,8 @@ function HomePage() {
             </div>
           </Section>
         )}
+
+        <PetsSection enabled={isMember} />
 
         <ProjectsSection enabled={isMember} hasAttention={hasProjectsAttention} />
 
