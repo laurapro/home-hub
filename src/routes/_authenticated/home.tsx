@@ -349,7 +349,7 @@ function UseSoonCard({ items }: { items: AttentionItem[] }) {
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         Use soon
       </h2>
-      <div className="rounded-xl border bg-routine/70 p-4 shadow-sm">
+      <div className="rounded-xl border bg-food/75 p-4 shadow-sm">
         <ul className="divide-y">
           {items.map((item, i) => (
             <li key={item.entity_id ?? `use-soon-${i}`} className="py-2 first:pt-0 last:pb-0">
@@ -612,7 +612,7 @@ function HomePage() {
         </div>
 
         {useSoon.length > 0 && (
-          <aside className="lg:sticky lg:top-8">
+          <aside>
             <UseSoonCard items={useSoon} />
           </aside>
         )}
