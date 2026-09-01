@@ -23,7 +23,9 @@ import type { MealItem } from "@/lib/household";
 
 const INACTIVE_STATUSES = new Set(["completed", "cancelled", "canceled", "skipped"]);
 
-export function MealActions({ meal }: { meal: MealItem }) {
+type ActionableMeal = Pick<MealItem, "planned_meal_id" | "status" | "thaw_items" | "missing_items">;
+
+export function MealActions({ meal }: { meal: ActionableMeal }) {
   const [confirm, setConfirm] = useState<null | "complete" | "cancel">(null);
   const plannedMealId = meal.planned_meal_id;
 

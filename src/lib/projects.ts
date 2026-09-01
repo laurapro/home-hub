@@ -30,7 +30,22 @@ export function useProjects(enabled: boolean) {
   });
 }
 
-const REFRESH_KEYS = ["projects", "household-attention", "today-timeline"];
+export function useProject(projectId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: ["project", HOUSEHOLD_SLUG, projectId],
+    enabled: enabled && projectId !== "",
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_lovable_projects", {
+        p_household_slug: HOUSEHOLD_SLUG,
+        p_include_complete: true,
+      });
+      if (error) throw new Error(error.message);
+      return ((data ?? []) as Project[]).find((project) => project.id === projectId) ?? null;
+    },
+  });
+}
+
+const REFRESH_KEYS = ["projects", "project", "household-attention", "today-timeline"];
 
 export function useProjectAction<TArgs>(
   run: (args: TArgs) => Promise<unknown>,

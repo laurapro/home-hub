@@ -5209,6 +5209,30 @@ export type Database = {
           severity: string
         }[]
       }
+      get_lovable_planned_meal: {
+        Args: { p_household_slug: string; p_planned_meal_id: string }
+        Returns: {
+          created_at: string
+          feasibility: string
+          household_timezone: string
+          meal_slot: string
+          missing_count: number
+          missing_items: Json
+          notes: string
+          plan_type: string
+          planned_for: string
+          planned_meal_id: string
+          recipe_id: string
+          recipe_name: string
+          source: string
+          status: string
+          thaw_count: number
+          thaw_items: Json
+          unknown_count: number
+          unknown_items: Json
+          updated_at: string
+        }[]
+      }
       get_lovable_projects: {
         Args: { p_household_slug?: string; p_include_complete?: boolean }
         Returns: {

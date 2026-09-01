@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +25,7 @@ import {
   type AttentionItem,
   type MealItem,
 } from "@/lib/household";
-import { getInteractiveCardClasses } from "@/lib/utils";
+import { cn, getInteractiveCardClasses } from "@/lib/utils";
 import { useProjects } from "@/lib/projects";
 import { usePetsAttention } from "@/lib/pets";
 
@@ -72,38 +72,88 @@ function Section({
   );
 }
 
-function Card({
-  children,
-  tone,
-  interactive = false,
-  showChevron = false,
-}: {
-  children: React.ReactNode;
-  tone?: string;
-  interactive?: boolean;
-  showChevron?: boolean;
-}) {
+function Card({ children, tone }: { children: React.ReactNode; tone?: string }) {
+  return <div className={cardClasses(tone)}>{children}</div>;
+}
+
+function cardClasses(tone?: string, interactive = false) {
   const border =
     tone === "critical"
       ? "border-l-4 border-l-critical"
       : tone === "due"
         ? "border-l-4 border-l-warning"
         : "";
-  const interactiveClasses = interactive ? getInteractiveCardClasses() : "";
-  return (
-    <div className={`rounded-xl border bg-card p-4 shadow-sm ${border} ${interactiveClasses}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1">{children}</div>
-        {interactive && showChevron && (
-          <ChevronRight className="mt-0.5 size-5 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
-        )}
-      </div>
-    </div>
+  return cn(
+    "rounded-xl border bg-card p-4 shadow-sm",
+    border,
+    interactive && "group",
+    interactive && getInteractiveCardClasses(),
   );
 }
 
 function AttentionCard({ item }: { item: AttentionItem }) {
   const tone = severityTone(item.severity);
+  const content = (
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <p className="break-words font-medium text-foreground">
+            {item.title ?? item.attention_type}
+          </p>
+          {item.due_at && (
+            <span className="text-xs text-muted-foreground">{formatDayTime(item.due_at)}</span>
+          )}
+        </div>
+        {item.human_action && (
+          <p className="mt-1 break-words text-sm text-muted-foreground">{item.human_action}</p>
+        )}
+        {item.domain && (
+          <p className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">
+            {item.domain}
+          </p>
+        )}
+      </div>
+      <ChevronRight className="mt-0.5 size-5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+    </div>
+  );
+
+  if (item.domain === "projects" && item.entity_id) {
+    return (
+      <Link
+        to="/projects/$projectId"
+        params={{ projectId: item.entity_id }}
+        className={cardClasses(tone, true)}
+      >
+        {content}
+      </Link>
+    );
+  }
+  if (item.domain === "pets") {
+    return (
+      <Link to="/pets" className={cardClasses(tone, true)}>
+        {content}
+      </Link>
+    );
+  }
+  if (item.domain === "shopping") {
+    return (
+      <Link to="/shopping" className={cardClasses(tone, true)}>
+        {content}
+      </Link>
+    );
+  }
+  if (item.domain === "food" && item.entity_type === "planned_meal" && item.entity_id) {
+    return (
+      <Link
+        to="/meals/$plannedMealId"
+        params={{ plannedMealId: item.entity_id }}
+        className={cardClasses(tone, true)}
+      >
+        {content}
+      </Link>
+    );
+  }
+
   return (
     <Card tone={tone}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -125,54 +175,82 @@ function AttentionCard({ item }: { item: AttentionItem }) {
 function MealCard({ label, meals }: { label: string; meals: MealItem[] }) {
   if (meals.length === 0) return null;
   return (
-    <Card>
+    <div className="space-y-2">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
-      <div className="mt-2 space-y-3">
+      <div className="space-y-3">
         {meals.map((meal, i) => (
-          <div key={meal.planned_meal_id ?? `${label}-${i}`}>
-            <div className="flex flex-wrap items-baseline gap-x-2">
-              <p className="text-lg font-medium text-foreground">
-                {meal.recipe_name ?? meal.plan_type ?? "Planned meal"}
-              </p>
-              {meal.meal_slot && (
-                <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                  {meal.meal_slot}
-                </span>
-              )}
+          <div
+            key={meal.planned_meal_id ?? `${label}-${i}`}
+            className="overflow-hidden rounded-xl border bg-card shadow-sm"
+          >
+            {meal.planned_meal_id ? (
+              <Link
+                to="/meals/$plannedMealId"
+                params={{ plannedMealId: meal.planned_meal_id }}
+                className={cn("group block p-4", getInteractiveCardClasses())}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <MealCardContent meal={meal} />
+                  <ChevronRight className="mt-0.5 size-5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+                </div>
+              </Link>
+            ) : (
+              <div className="p-4">
+                <MealCardContent meal={meal} />
+              </div>
+            )}
+            <div className="border-t px-4 pb-4">
+              <MealActions meal={meal} />
             </div>
-            <div className="mt-2 flex flex-wrap gap-2 text-xs">
-              {meal.feasibility && (
-                <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">
-                  {meal.feasibility}
-                </span>
-              )}
-              {meal.status && (
-                <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">
-                  {meal.status}
-                </span>
-              )}
-              {!!meal.thaw_count && (
-                <span className="rounded-full bg-warning/20 px-2.5 py-1 text-foreground">
-                  thaw {meal.thaw_count}
-                </span>
-              )}
-              {!!meal.missing_count && (
-                <span className="rounded-full bg-critical/15 px-2.5 py-1 text-foreground">
-                  missing {meal.missing_count}
-                </span>
-              )}
-              {!!meal.unknown_count && (
-                <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
-                  unknown {meal.unknown_count}
-                </span>
-              )}
-            </div>
-            {meal.notes && <p className="mt-2 text-sm text-muted-foreground">{meal.notes}</p>}
-            <MealActions meal={meal} />
           </div>
         ))}
       </div>
-    </Card>
+    </div>
+  );
+}
+
+function MealCardContent({ meal }: { meal: MealItem }) {
+  return (
+    <div className="min-w-0 flex-1">
+      <div className="flex flex-wrap items-baseline gap-x-2">
+        <p className="break-words text-lg font-medium text-foreground">
+          {meal.recipe_name ?? meal.plan_type ?? "Planned meal"}
+        </p>
+        {meal.meal_slot && (
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">
+            {meal.meal_slot}
+          </span>
+        )}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2 text-xs">
+        {meal.feasibility && (
+          <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">
+            {meal.feasibility}
+          </span>
+        )}
+        {meal.status && (
+          <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">
+            {meal.status}
+          </span>
+        )}
+        {!!meal.thaw_count && (
+          <span className="rounded-full bg-warning/20 px-2.5 py-1 text-foreground">
+            thaw {meal.thaw_count}
+          </span>
+        )}
+        {!!meal.missing_count && (
+          <span className="rounded-full bg-critical/15 px-2.5 py-1 text-foreground">
+            missing {meal.missing_count}
+          </span>
+        )}
+        {!!meal.unknown_count && (
+          <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
+            unknown {meal.unknown_count}
+          </span>
+        )}
+      </div>
+      {meal.notes && <p className="mt-2 break-words text-sm text-muted-foreground">{meal.notes}</p>}
+    </div>
   );
 }
 
@@ -328,25 +406,34 @@ function HomePage() {
           <Section title="Shopping">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {data.shopping.map((store, i) => (
-                <Card key={store.store_name ?? `store-${i}`}>
-                  <p className="font-medium text-foreground">{store.store_name ?? "Store"}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {store.item_count ?? 0} item{store.item_count === 1 ? "" : "s"}
-                    {store.urgent_count ? ` · ${store.urgent_count} urgent` : ""}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                    {store.next_needed_by && formatDay(store.next_needed_by) && (
-                      <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">
-                        needed by {formatDay(store.next_needed_by)}
-                      </span>
-                    )}
-                    {store.dog_food_included && (
-                      <span className="rounded-full bg-accent px-2.5 py-1 text-accent-foreground">
-                        dog food
-                      </span>
-                    )}
+                <Link
+                  key={store.store_name ?? `store-${i}`}
+                  to="/shopping"
+                  className={cardClasses(undefined, true)}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-foreground">{store.store_name ?? "Store"}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {store.item_count ?? 0} item{store.item_count === 1 ? "" : "s"}
+                        {store.urgent_count ? ` · ${store.urgent_count} urgent` : ""}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                        {store.next_needed_by && formatDay(store.next_needed_by) && (
+                          <span className="rounded-full bg-secondary px-2.5 py-1 text-secondary-foreground">
+                            needed by {formatDay(store.next_needed_by)}
+                          </span>
+                        )}
+                        {store.dog_food_included && (
+                          <span className="rounded-full bg-accent px-2.5 py-1 text-accent-foreground">
+                            dog food
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight className="mt-0.5 size-5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
                   </div>
-                </Card>
+                </Link>
               ))}
             </div>
             <ShoppingItemsList enabled={isMember} />
