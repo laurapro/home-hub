@@ -60,7 +60,7 @@ export function ProjectsSection({
               return (
                 <div
                   key={project.id}
-                  className="overflow-hidden rounded-xl border bg-card shadow-sm"
+                  className="overflow-hidden rounded-xl border bg-projects/45 shadow-sm"
                 >
                   <Link
                     to="/projects/$projectId"

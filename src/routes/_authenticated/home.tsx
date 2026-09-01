@@ -73,8 +73,24 @@ function Section({
   );
 }
 
-function Card({ children, tone }: { children: React.ReactNode; tone?: string }) {
-  return <div className={cardClasses(tone)}>{children}</div>;
+function Card({
+  children,
+  tone,
+  className,
+}: {
+  children: React.ReactNode;
+  tone?: string;
+  className?: string;
+}) {
+  return <div className={cn(cardClasses(tone), className)}>{children}</div>;
+}
+
+function domainLabelClasses(domain: string | null) {
+  if (domain === "food") return "bg-food text-food-foreground";
+  if (domain === "shopping") return "bg-shopping text-shopping-foreground";
+  if (domain === "projects") return "bg-projects text-projects-foreground";
+  if (domain === "pets") return "bg-pets text-pets-foreground";
+  return "bg-secondary text-secondary-foreground";
 }
 
 function cardClasses(tone?: string, interactive = false) {
@@ -117,7 +133,12 @@ function AttentionCard({
           <p className="mt-1 break-words text-sm text-muted-foreground">{item.human_action}</p>
         )}
         {item.domain && (
-          <p className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">
+          <p
+            className={cn(
+              "mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize",
+              domainLabelClasses(item.domain),
+            )}
+          >
             {item.domain}
           </p>
         )}
@@ -225,7 +246,12 @@ function AttentionCard({
           <p className="mt-1 text-sm text-muted-foreground">{item.human_action}</p>
         )}
         {item.domain && (
-          <p className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">
+          <p
+            className={cn(
+              "mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-medium capitalize",
+              domainLabelClasses(item.domain),
+            )}
+          >
             {item.domain}
           </p>
         )}
@@ -243,7 +269,7 @@ function MealCard({ label, meals }: { label: string; meals: MealItem[] }) {
         {meals.map((meal, i) => (
           <div
             key={meal.planned_meal_id ?? `${label}-${i}`}
-            className="overflow-hidden rounded-xl border bg-card shadow-sm"
+            className="overflow-hidden rounded-xl border bg-food/55 shadow-sm"
           >
             {meal.planned_meal_id ? (
               <Link
@@ -323,7 +349,7 @@ function UseSoonCard({ items }: { items: AttentionItem[] }) {
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         Use soon
       </h2>
-      <div className="rounded-xl border bg-card p-4 shadow-sm">
+      <div className="rounded-xl border bg-routine/45 p-4 shadow-sm">
         <ul className="divide-y">
           {items.map((item, i) => (
             <li key={item.entity_id ?? `use-soon-${i}`} className="py-2 first:pt-0 last:pb-0">
@@ -469,9 +495,12 @@ function HomePage() {
             <Section title="Today">
               <div className="space-y-2">
                 {data.timeline.map((item, i) => {
-                  const informational = item.item_type !== "calendar_event";
+                  const isCalendar = item.item_type === "calendar_event";
                   return (
-                    <Card key={item.entity_id ?? `timeline-${i}`}>
+                    <Card
+                      key={item.entity_id ?? `timeline-${i}`}
+                      className={isCalendar ? "bg-calendar/55" : "bg-routine/55"}
+                    >
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
                         <p className="font-medium text-foreground">{item.title}</p>
                         <span className="text-sm tabular-nums text-muted-foreground">
@@ -481,11 +510,16 @@ function HomePage() {
                       </div>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         {item.location && <span>{item.location}</span>}
-                        {informational && (
-                          <span className="rounded-full bg-secondary px-2 py-0.5 text-secondary-foreground">
-                            informational
-                          </span>
-                        )}
+                        <span
+                          className={cn(
+                            "rounded-full px-2.5 py-1 font-medium",
+                            isCalendar
+                              ? "bg-calendar text-calendar-foreground"
+                              : "bg-routine text-routine-foreground",
+                          )}
+                        >
+                          {isCalendar ? "Calendar" : "Routine"}
+                        </span>
                       </div>
                     </Card>
                   );
@@ -525,7 +559,7 @@ function HomePage() {
                   <Link
                     key={store.store_name ?? `store-${i}`}
                     to="/shopping"
-                    className={cardClasses(undefined, true)}
+                    className={cn(cardClasses(undefined, true), "bg-shopping/45")}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
