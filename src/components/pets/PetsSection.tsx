@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { HOUSEHOLD_SLUG, formatDay, formatDayTime } from "@/lib/household";
 import { useMarkPetMedicationGiven, usePetsAttention, type PetAttention } from "@/lib/pets";
 import { cn, getInteractiveCardClasses } from "@/lib/utils";
+import { HomeSectionState } from "@/components/home/HomeSectionState";
 
 const ATTENTION_LABELS: Record<string, string> = {
   medication_overdue: "Overdue",
@@ -141,16 +142,24 @@ export function PetsSection({ enabled }: { enabled: boolean }) {
   const pets = usePetsAttention(enabled);
   const items = pets.data ?? [];
 
-  if (!enabled || pets.isPending || (!pets.error && items.length === 0)) return null;
+  if (!enabled) return null;
 
   return (
     <section className="space-y-3">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Pets</h2>
-      {pets.error ? (
-        <p className="text-sm text-critical">{(pets.error as Error).message}</p>
-      ) : (
+      <HomeSectionState
+        query={{
+          isPending: pets.isPending,
+          error: pets.error as Error | null,
+          refetch: pets.refetch,
+        }}
+        isEmpty={items.length === 0}
+        loadingMessage="Loading Pets…"
+        emptyMessage="Nothing needs attention right now."
+        errorMessage="Pets are temporarily unavailable."
+      >
         <PetsCards items={items} navigable />
-      )}
+      </HomeSectionState>
     </section>
   );
 }
