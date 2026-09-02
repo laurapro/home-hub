@@ -5452,6 +5452,10 @@ export type Database = {
         }
         Returns: Json
       }
+      lovable_undo_food_inventory_correction: {
+        Args: { p_correction_id: string }
+        Returns: Json
+      }
       lovable_create_project: {
         Args: {
           p_follow_up_at?: string
