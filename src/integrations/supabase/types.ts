@@ -3222,6 +3222,7 @@ export type Database = {
           custom_name: string | null
           household_id: string
           id: string
+          inventory_reconciled_at: string | null
           item_id: string | null
           needed_by: string | null
           priority: string
@@ -3240,6 +3241,7 @@ export type Database = {
           custom_name?: string | null
           household_id: string
           id?: string
+          inventory_reconciled_at?: string | null
           item_id?: string | null
           needed_by?: string | null
           priority?: string
@@ -3258,6 +3260,7 @@ export type Database = {
           custom_name?: string | null
           household_id?: string
           id?: string
+          inventory_reconciled_at?: string | null
           item_id?: string | null
           needed_by?: string | null
           priority?: string
@@ -5250,6 +5253,15 @@ export type Database = {
           waiting_on: string
         }[]
       }
+      get_lovable_shopping_inventory_matches: {
+        Args: { p_household_slug?: string }
+        Returns: {
+          inventory_id: string
+          inventory_reconciled_at: string | null
+          location_name: string
+          shopping_item_id: string
+        }[]
+      }
       get_lovable_shopping_items: {
         Args: { p_household_slug?: string; p_include_completed?: boolean }
         Returns: {
@@ -5508,6 +5520,10 @@ export type Database = {
           p_planned_for: string
           p_recipe_id?: string
         }
+        Returns: Json
+      }
+      lovable_reconcile_shopping_item_inventory: {
+        Args: { p_household_slug: string; p_shopping_item_id: string }
         Returns: Json
       }
       lovable_restore_shopping_item: {
