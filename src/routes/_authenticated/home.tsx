@@ -12,6 +12,7 @@ import { ProjectDialog } from "@/components/projects/ProjectDialog";
 import { ProjectsSection } from "@/components/projects/ProjectsSection";
 import { PetsSection } from "@/components/pets/PetsSection";
 import { InlineAttentionAction } from "@/components/home/InlineAttentionAction";
+import { HomeSectionState } from "@/components/home/HomeSectionState";
 import {
   formatDay,
   formatDayTime,
@@ -383,10 +384,7 @@ function MealCardContent({ meal }: { meal: MealItem }) {
 /** Compact side card: inventory the household could use up soon. */
 function UseSoonCard({ items }: { items: AttentionItem[] }) {
   return (
-    <section className="space-y-3">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-        Use soon
-      </h2>
+    <div className="space-y-3">
       <div className="overflow-hidden rounded-xl border bg-food/75 shadow-sm">
         <ul className="divide-y divide-border/70">
           {items.map((item, i) => (
@@ -427,7 +425,7 @@ function UseSoonCard({ items }: { items: AttentionItem[] }) {
           ))}
         </ul>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -439,6 +437,11 @@ function HomePage() {
   const data = useHomeData(isMember);
   const projects = useProjects(isMember);
   const pets = usePetsAttention(isMember);
+  const timeline = data.timeline;
+  const tomorrowTimeline = data.tomorrowTimeline;
+  const attention = data.attention;
+  const meals = data.meals;
+  const shoppingStores = data.shopping;
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
@@ -452,16 +455,16 @@ function HomePage() {
   const isShoppingListItem = (item: AttentionItem) => item.entity_type === "shopping_item";
   const isUseSoon = (item: AttentionItem) => item.entity_type === "inventory";
 
-  const needsYou = data.attention.filter(
+  const needsYou = attention.filter(
     (item) => isNeedsYou(item) && !isShoppingListItem(item) && !isUseSoon(item),
   );
-  const useSoon = data.attention.filter(isUseSoon);
-  const comingUp = data.attention
+  const useSoon = attention.filter(isUseSoon);
+  const comingUp = attention
     .filter((item) => isUpcoming(item) && !isShoppingListItem(item) && !isUseSoon(item))
     .slice(0, 4);
-  const hasProjectsAttention = data.attention.some((item) => item.domain === "projects");
-  const tonight = data.meals.filter((m) => m.planned_for === todayKey());
-  const tomorrow = data.meals.filter((m) => m.planned_for === tomorrowKey());
+  const hasProjectsAttention = attention.some((item) => item.domain === "projects");
+  const tonight = meals.filter((m) => m.planned_for === todayKey());
+  const tomorrow = meals.filter((m) => m.planned_for === tomorrowKey());
 
   const header = (
     <header className="sticky top-0 z-40 -mx-4 flex flex-wrap items-start justify-between gap-4 border-b bg-background/95 px-4 py-4 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/85 sm:-mx-6 sm:px-6">
@@ -504,7 +507,7 @@ function HomePage() {
 
   let body: React.ReactNode;
 
-  if (membership.isPending || data.isLoading) {
+  if (membership.isPending) {
     body = <p className="text-sm text-muted-foreground">Loading your household…</p>;
   } else if (membership.error) {
     body = (
@@ -523,15 +526,8 @@ function HomePage() {
         </p>
       </Card>
     );
-  } else if (data.errorMessage) {
-    body = (
-      <Card>
-        <p className="font-medium text-foreground">Couldn't load household data</p>
-        <p className="mt-1 text-sm text-muted-foreground">{data.errorMessage}</p>
-      </Card>
-    );
   } else {
-    const shopping = data.shopping.reduce(
+    const shopping = shoppingStores.reduce(
       (summary, store) => {
         summary.itemCount += store.item_count ?? 0;
         summary.urgentCount += store.urgent_count ?? 0;
@@ -548,11 +544,11 @@ function HomePage() {
     );
 
     const hasAnything =
-      data.timeline.length > 0 ||
-      data.tomorrowTimeline.length > 0 ||
+      timeline.length > 0 ||
+      tomorrowTimeline.length > 0 ||
       needsYou.length > 0 ||
       tonight.length + tomorrow.length > 0 ||
-      data.shopping.length > 0 ||
+      shoppingStores.length > 0 ||
       comingUp.length > 0 ||
       useSoon.length > 0 ||
       (projects.data?.length ?? 0) > 0 ||
@@ -562,14 +558,26 @@ function HomePage() {
     body = (
       <div className="grid items-start gap-8 lg:grid-cols-3">
         <div className="space-y-8 lg:col-span-2">
-          {data.timeline.length > 0 && (
-            <Section title="Today">
-              <ScheduleList items={data.timeline} />
-            </Section>
-          )}
+          <Section title="Today">
+            <HomeSectionState
+              query={data.queries.timeline}
+              isEmpty={timeline.length === 0}
+              loadingMessage="Loading today’s schedule…"
+              emptyMessage="Nothing scheduled today."
+              errorMessage="Today’s schedule is temporarily unavailable."
+            >
+              <ScheduleList items={timeline} />
+            </HomeSectionState>
+          </Section>
 
-          {needsYou.length > 0 && (
-            <Section title="Needs you">
+          <Section title="Needs you">
+            <HomeSectionState
+              query={data.queries.attention}
+              isEmpty={needsYou.length === 0}
+              loadingMessage="Loading household attention…"
+              emptyMessage="Nothing needs you right now."
+              errorMessage="Household attention is temporarily unavailable."
+            >
               <div className="grid gap-3 sm:grid-cols-2">
                 {needsYou.map((item, i) => (
                   <AttentionCard
@@ -580,20 +588,32 @@ function HomePage() {
                   />
                 ))}
               </div>
-            </Section>
-          )}
+            </HomeSectionState>
+          </Section>
 
-          {tonight.length + tomorrow.length > 0 && (
-            <Section title="Meals">
+          <Section title="Meals">
+            <HomeSectionState
+              query={data.queries.meals}
+              isEmpty={tonight.length + tomorrow.length === 0}
+              loadingMessage="Loading meals…"
+              emptyMessage="No meals planned for today or tomorrow."
+              errorMessage="Meals are temporarily unavailable."
+            >
               <div className="grid gap-3 sm:grid-cols-2">
                 <MealCard label="Tonight" meals={tonight} />
                 <MealCard label={`Tomorrow · ${formatDay(tomorrowKey()) ?? ""}`} meals={tomorrow} />
               </div>
-            </Section>
-          )}
+            </HomeSectionState>
+          </Section>
 
-          {data.shopping.length > 0 && (
-            <Section title="Shopping">
+          <Section title="Shopping">
+            <HomeSectionState
+              query={data.queries.shopping}
+              isEmpty={shoppingStores.length === 0}
+              loadingMessage="Loading shopping…"
+              emptyMessage="The shopping list is empty."
+              errorMessage="Shopping is temporarily unavailable."
+            >
               <Link
                 to="/shopping"
                 className={cn(cardClasses(undefined, true), "block bg-shopping/70")}
@@ -622,42 +642,39 @@ function HomePage() {
                 </div>
               </Link>
               <ShoppingItemsList enabled={isMember} />
-            </Section>
-          )}
+            </HomeSectionState>
+          </Section>
 
-          {comingUp.length > 0 && (
-            <Section title="Coming up">
+          <Section title="Coming up">
+            <HomeSectionState
+              query={data.queries.attention}
+              isEmpty={comingUp.length === 0}
+              loadingMessage="Loading what’s coming up…"
+              emptyMessage="Nothing coming up."
+              errorMessage="Household attention is temporarily unavailable."
+            >
               <div className="grid gap-3 sm:grid-cols-2">
                 {comingUp.map((item, i) => (
                   <AttentionCard key={item.entity_id ?? `upcoming-${i}`} item={item} />
                 ))}
               </div>
-            </Section>
-          )}
+            </HomeSectionState>
+          </Section>
 
           <PetsSection enabled={isMember} />
 
           <ProjectsSection enabled={isMember} hasAttention={hasProjectsAttention} />
 
           <Section title="Tomorrow" hint="FYI">
-            {data.tomorrowIsLoading ? (
-              <Card className="bg-muted/50">
-                <p className="text-sm text-muted-foreground">Loading tomorrow’s schedule…</p>
-              </Card>
-            ) : data.tomorrowError ? (
-              <Card className="bg-muted/50">
-                <p className="text-sm text-muted-foreground">
-                  Tomorrow’s schedule is temporarily unavailable. Today’s information is still up to
-                  date.
-                </p>
-              </Card>
-            ) : data.tomorrowTimeline.length > 0 ? (
-              <ScheduleList items={data.tomorrowTimeline} />
-            ) : (
-              <Card className="bg-muted/50">
-                <p className="text-sm text-muted-foreground">Nothing scheduled tomorrow.</p>
-              </Card>
-            )}
+            <HomeSectionState
+              query={data.queries.tomorrowTimeline}
+              isEmpty={tomorrowTimeline.length === 0}
+              loadingMessage="Loading tomorrow’s schedule…"
+              emptyMessage="Nothing scheduled tomorrow."
+              errorMessage="Tomorrow’s schedule is temporarily unavailable."
+            >
+              <ScheduleList items={tomorrowTimeline} />
+            </HomeSectionState>
           </Section>
 
           {!hasAnything && (
@@ -667,9 +684,21 @@ function HomePage() {
           )}
         </div>
 
-        {useSoon.length > 0 && (
+        {(data.queries.attention.isPending ||
+          data.queries.attention.error ||
+          useSoon.length > 0) && (
           <aside>
-            <UseSoonCard items={useSoon} />
+            <Section title="Use soon">
+              <HomeSectionState
+                query={data.queries.attention}
+                isEmpty={useSoon.length === 0}
+                loadingMessage="Loading items to use soon…"
+                emptyMessage="Nothing to use soon."
+                errorMessage="Household attention is temporarily unavailable."
+              >
+                <UseSoonCard items={useSoon} />
+              </HomeSectionState>
+            </Section>
           </aside>
         )}
       </div>

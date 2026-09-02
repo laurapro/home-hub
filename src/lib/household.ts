@@ -79,13 +79,15 @@ export function useHomeData(enabled: boolean) {
     refetchInterval: HOME_REFETCH_INTERVAL_MS,
   });
 
-  // Tomorrow is supplemental. Its loading or failure must never hide today's
-  // otherwise healthy home data.
-  const coreQueries = [timeline, attention, meals, shopping];
-
   return {
-    isLoading: enabled && coreQueries.some((q) => q.isPending),
-    errorMessage: (coreQueries.find((q) => q.error)?.error as Error | undefined)?.message ?? null,
+    // Keep the flat values for Kitchen mode while Home consumes the independent
+    // query states below. Cached data remains available during refetches.
+    isLoading: enabled && [timeline, attention, meals, shopping].some((query) => query.isPending),
+    errorMessage:
+      (
+        [timeline, attention, meals, shopping].find((query) => query.error)?.error as
+          Error | undefined
+      )?.message ?? null,
     timeline: timeline.data ?? [],
     tomorrowTimeline: tomorrowTimeline.data ?? [],
     tomorrowIsLoading: tomorrowTimeline.isPending,
@@ -93,6 +95,13 @@ export function useHomeData(enabled: boolean) {
     attention: attention.data ?? [],
     meals: meals.data ?? [],
     shopping: shopping.data ?? [],
+    queries: {
+      timeline: { ...timeline, data: timeline.data ?? [] },
+      tomorrowTimeline: { ...tomorrowTimeline, data: tomorrowTimeline.data ?? [] },
+      attention: { ...attention, data: attention.data ?? [] },
+      meals: { ...meals, data: meals.data ?? [] },
+      shopping: { ...shopping, data: shopping.data ?? [] },
+    },
   };
 }
 
