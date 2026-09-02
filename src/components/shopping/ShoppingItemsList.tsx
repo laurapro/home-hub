@@ -1,4 +1,10 @@
 import { useState } from "react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -22,14 +28,15 @@ import {
   isOpenShoppingItem,
   isRecentlyResolved,
   restoreShoppingItem,
-  setShoppingItemStore,
   skipShoppingItem,
   useShoppingAction,
   useShoppingItems,
+  useSetShoppingItemStore,
   useStores,
   type ShoppingItem,
   type Store,
 } from "@/lib/shopping";
+import { groupShoppingItemsByStore, UNCATEGORIZED_STORE_KEY } from "@/lib/shopping-groups";
 import { HOUSEHOLD_SLUG, formatDay } from "@/lib/household";
 
 type PendingAction = { kind: "complete" | "skip"; item: ShoppingItem } | null;
@@ -69,13 +76,16 @@ function ItemRow({
           )}
         </div>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
         <Select
           value={item.store_id ?? NO_STORE}
           onValueChange={(value) => onStoreChange(item, value)}
           disabled={storeBusy}
         >
-          <SelectTrigger className="h-11 w-[150px] bg-background" aria-label={`Store for ${label}`}>
+          <SelectTrigger
+            className="h-11 min-w-0 flex-1 bg-background sm:w-[150px] sm:flex-none"
+            aria-label={`Store for ${label}`}
+          >
             <SelectValue placeholder="Uncategorized" />
           </SelectTrigger>
           <SelectContent>
@@ -104,18 +114,20 @@ export function ShoppingItemsList({
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [confirm, setConfirm] = useState<PendingAction>(null);
+  const [expandedStoreGroups, setExpandedStoreGroups] = useState<string[] | null>(null);
 
   const items = useShoppingItems(enabled && expanded);
   const complete = useShoppingAction(completeShoppingItem, "Marked as purchased");
   const skip = useShoppingAction(skipShoppingItem, "Skipped");
   const restore = useShoppingAction(restoreShoppingItem, "Restored to list");
-  const setStore = useShoppingAction(setShoppingItemStore, "Store updated");
   const stores = useStores(enabled && expanded);
+  const setStore = useSetShoppingItemStore(stores.data ?? []);
   const busy = complete.isPending || skip.isPending || restore.isPending || setStore.isPending;
 
   const all = items.data ?? [];
   const open = all.filter(isOpenShoppingItem);
   const recent = all.filter(isRecentlyResolved);
+  const storeGroups = groupShoppingItemsByStore(open, stores.data ?? []);
 
   function runConfirmed() {
     const action = confirm;
@@ -130,6 +142,10 @@ export function ShoppingItemsList({
   }
 
   function changeStore(item: ShoppingItem, storeId: string) {
+    const targetGroup = storeId === NO_STORE ? UNCATEGORIZED_STORE_KEY : storeId;
+    setExpandedStoreGroups((current) => [
+      ...new Set([...(current ?? storeGroups.map((group) => group.key)), targetGroup]),
+    ]);
     setStore.mutate({
       p_household_slug: HOUSEHOLD_SLUG,
       p_shopping_item_id: item.id,
@@ -162,35 +178,58 @@ export function ShoppingItemsList({
           {!items.isPending && !items.error && (
             <>
               {open.length > 0 ? (
-                <div className="space-y-2">
-                  {open.map((item) => (
-                    <ItemRow
-                      key={item.id}
-                      item={item}
-                      stores={stores.data ?? []}
-                      storeBusy={setStore.isPending}
-                      onStoreChange={changeStore}
+                <Accordion
+                  type="multiple"
+                  value={expandedStoreGroups ?? storeGroups.map((group) => group.key)}
+                  onValueChange={setExpandedStoreGroups}
+                  className="space-y-3"
+                >
+                  {storeGroups.map((group) => (
+                    <AccordionItem
+                      key={group.key}
+                      value={group.key}
+                      className="rounded-xl border bg-card px-3"
                     >
-                      <Button
-                        size="sm"
-                        className="h-11"
-                        disabled={busy}
-                        onClick={() => setConfirm({ kind: "complete", item })}
-                      >
-                        Complete
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-11"
-                        disabled={busy}
-                        onClick={() => setConfirm({ kind: "skip", item })}
-                      >
-                        Skip
-                      </Button>
-                    </ItemRow>
+                      <AccordionTrigger className="min-w-0 py-3 hover:no-underline">
+                        <span className="flex min-w-0 items-center gap-2 text-left">
+                          <span className="truncate">{group.name}</span>
+                          <span className="shrink-0 text-xs font-normal text-muted-foreground">
+                            {group.items.length} {group.items.length === 1 ? "item" : "items"}
+                          </span>
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="space-y-2">
+                        {group.items.map((item) => (
+                          <ItemRow
+                            key={item.id}
+                            item={item}
+                            stores={stores.data ?? []}
+                            storeBusy={setStore.isPending}
+                            onStoreChange={changeStore}
+                          >
+                            <Button
+                              size="sm"
+                              className="h-11"
+                              disabled={busy}
+                              onClick={() => setConfirm({ kind: "complete", item })}
+                            >
+                              Complete
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-11"
+                              disabled={busy}
+                              onClick={() => setConfirm({ kind: "skip", item })}
+                            >
+                              Skip
+                            </Button>
+                          </ItemRow>
+                        ))}
+                      </AccordionContent>
+                    </AccordionItem>
                   ))}
-                </div>
+                </Accordion>
               ) : (
                 <p className="text-sm text-muted-foreground">No open shopping items.</p>
               )}

@@ -61,6 +61,48 @@ export function useShoppingAction<TArgs>(
   });
 }
 
+type SetStoreArgs = Fns["lovable_set_shopping_item_store"]["Args"];
+
+export function useSetShoppingItemStore(stores: Store[]) {
+  const queryClient = useQueryClient();
+  const queryKey = ["shopping-items", HOUSEHOLD_SLUG] as const;
+
+  return useMutation({
+    mutationFn: setShoppingItemStore,
+    onMutate: async (args: SetStoreArgs) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<ShoppingItem[]>(queryKey);
+      const selectedStore = stores.find((store) => store.id === args.p_store_id);
+
+      queryClient.setQueryData<ShoppingItem[]>(queryKey, (current = []) =>
+        current.map((item) =>
+          item.id === args.p_shopping_item_id
+            ? ({
+                ...item,
+                store_id: args.p_store_id ?? null,
+                store_name: selectedStore?.name ?? null,
+              } as unknown as ShoppingItem)
+            : item,
+        ),
+      );
+
+      return { previous };
+    },
+    onSuccess: () => toast.success("Store updated"),
+    onError: (error: Error, _args, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKey, context.previous);
+      toast.error(error.message);
+    },
+    onSettled: async () => {
+      await Promise.all(
+        REFRESH_KEYS.map((key) =>
+          queryClient.invalidateQueries({ queryKey: [key, HOUSEHOLD_SLUG] }),
+        ),
+      );
+    },
+  });
+}
+
 async function rpc<K extends keyof Fns & string>(name: K, args: Fns[K]["Args"]) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await supabase.rpc(name as any, args as any);
