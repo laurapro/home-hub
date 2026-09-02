@@ -21,9 +21,10 @@ import {
 } from "@/components/ui/select";
 import {
   INVENTORY_STATUSES,
-  correctFoodInventory,
-  useFoodAction,
+  inventoryQuickCorrection,
+  useInventoryCorrectionAction,
   useFoodInventory,
+  type InventoryQuickAction,
 } from "@/lib/food";
 
 export function CorrectInventoryDialog({
@@ -44,7 +45,7 @@ export function CorrectInventoryDialog({
   const [markOpened, setMarkOpened] = useState(false);
 
   const inventory = useFoodInventory(enabled && open);
-  const action = useFoodAction(correctFoodInventory, "Inventory corrected");
+  const action = useInventoryCorrectionAction();
 
   const selected = useMemo(
     () => (inventory.data ?? []).find((row) => row.inventory_id === inventoryId),
@@ -66,10 +67,19 @@ export function CorrectInventoryDialog({
     (status !== "" || quantity !== "" || unit !== "" || mealsRemaining !== "" || markOpened);
 
   function submit() {
+    const editedAmount = isMealsMode ? mealsRemaining : quantity;
+    const inferredStatus =
+      editedAmount !== ""
+        ? Number(editedAmount) === 0
+          ? "out"
+          : selected?.status === "out"
+            ? "some"
+            : ""
+        : "";
     action.mutate(
       {
         p_inventory_id: inventoryId,
-        ...(status ? { p_status: status } : {}),
+        ...(status || inferredStatus ? { p_status: status || inferredStatus } : {}),
         ...(!isMealsMode && quantity !== "" ? { p_quantity: Number(quantity) } : {}),
         ...(!isMealsMode && unit !== "" ? { p_quantity_unit: unit } : {}),
         ...(isMealsMode && mealsRemaining !== ""
@@ -84,6 +94,28 @@ export function CorrectInventoryDialog({
         },
       },
     );
+  }
+
+  function runQuick(actionName: InventoryQuickAction) {
+    if (!selected) return;
+    action.mutate(inventoryQuickCorrection(selected, actionName), {
+      onSuccess: () => {
+        setOpen(false);
+        reset();
+      },
+    });
+  }
+
+  function adjustNumber(kind: "quantity" | "meals", amount: number) {
+    if (!selected) return;
+    if (kind === "meals") {
+      const current =
+        mealsRemaining === "" ? (selected.meals_remaining ?? 0) : Number(mealsRemaining);
+      setMealsRemaining(String(Math.max(0, current + amount)));
+      return;
+    }
+    const current = quantity === "" ? (selected.quantity ?? 0) : Number(quantity);
+    setQuantity(String(Math.max(0, current + amount)));
   }
 
   return (
@@ -133,14 +165,48 @@ export function CorrectInventoryDialog({
           </div>
 
           {selected && (
-            <p className="text-xs text-muted-foreground">
-              Currently {selected.status ?? "unknown"}
-              {isMealsMode
-                ? ` · ${selected.meals_remaining ?? 0} meals left`
-                : selected.quantity != null
-                  ? ` · ${selected.quantity} ${selected.quantity_unit ?? ""}`.trimEnd()
-                  : ""}
-            </p>
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Currently {selected.status ?? "unknown"}
+                {isMealsMode
+                  ? ` · ${selected.meals_remaining ?? 0} meals left`
+                  : selected.quantity != null
+                    ? ` · ${selected.quantity} ${selected.quantity_unit ?? ""}`.trimEnd()
+                    : ""}
+              </p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11"
+                  disabled={action.isPending || selected.status === "out"}
+                  onClick={() => runQuick("used_some")}
+                >
+                  Used some
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11"
+                  disabled={action.isPending || selected.status === "out"}
+                  onClick={() => runQuick("finished")}
+                >
+                  Finished
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11"
+                  disabled={action.isPending || selected.status === "out"}
+                  onClick={() => runQuick("still_have")}
+                >
+                  Still have it
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                “Used some” removes one tracked unit or moves the status down one level.
+              </p>
+            </div>
           )}
 
           <div className="space-y-2">
@@ -162,31 +228,67 @@ export function CorrectInventoryDialog({
           {isMealsMode ? (
             <div className="space-y-2">
               <Label htmlFor="meals-remaining">Meals remaining (optional)</Label>
-              <Input
-                id="meals-remaining"
-                className="h-11"
-                type="number"
-                min="0"
-                step="0.5"
-                inputMode="decimal"
-                value={mealsRemaining}
-                onChange={(e) => setMealsRemaining(e.target.value)}
-              />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11"
+                  onClick={() => adjustNumber("meals", -1)}
+                >
+                  −1
+                </Button>
+                <Input
+                  id="meals-remaining"
+                  className="h-11"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  inputMode="decimal"
+                  value={mealsRemaining}
+                  onChange={(e) => setMealsRemaining(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11"
+                  onClick={() => adjustNumber("meals", 1)}
+                >
+                  +1
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="quantity">Quantity (optional)</Label>
-                <Input
-                  id="quantity"
-                  className="h-11"
-                  type="number"
-                  min="0"
-                  step="any"
-                  inputMode="decimal"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                />
+                <div className="flex gap-2 sm:col-span-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11"
+                    onClick={() => adjustNumber("quantity", -1)}
+                  >
+                    −1
+                  </Button>
+                  <Input
+                    id="quantity"
+                    className="h-11"
+                    type="number"
+                    min="0"
+                    step="any"
+                    inputMode="decimal"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11"
+                    onClick={() => adjustNumber("quantity", 1)}
+                  >
+                    +1
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="unit">Unit (optional)</Label>

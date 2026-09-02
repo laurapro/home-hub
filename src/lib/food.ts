@@ -8,6 +8,7 @@ type Fns = Database["public"]["Functions"];
 export type RecipeOption = Fns["get_lovable_food_recipes"]["Returns"][number];
 export type InventoryOption = Fns["get_lovable_food_inventory"]["Returns"][number];
 export type PlannedMeal = Fns["get_lovable_planned_meal"]["Returns"][number];
+export type InventoryQuickAction = "used_some" | "finished" | "still_have";
 
 /** Canonical JSON shapes returned by get_lovable_home_meals. */
 export type MissingItem = { item_id: string; item: string; quantity?: number; unit?: string };
@@ -76,6 +77,12 @@ const REFRESH_KEYS = [
   "planned-meal",
 ];
 
+async function refreshFoodData(queryClient: ReturnType<typeof useQueryClient>) {
+  await Promise.all(
+    REFRESH_KEYS.map((key) => queryClient.invalidateQueries({ queryKey: [key, HOUSEHOLD_SLUG] })),
+  );
+}
+
 /**
  * Thin wrapper: React only gathers parameters and invokes the membership-gated RPC.
  * All domain logic, idempotency and auditing stay in Supabase.
@@ -93,11 +100,7 @@ export function useFoodAction<TArgs>(
         typeof result === "object" &&
         (result as Record<string, unknown>)["already_applied"];
       toast.success(applied ? "Already up to date" : successMessage);
-      await Promise.all(
-        REFRESH_KEYS.map((key) =>
-          queryClient.invalidateQueries({ queryKey: [key, HOUSEHOLD_SLUG] }),
-        ),
-      );
+      await refreshFoodData(queryClient);
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -114,6 +117,44 @@ export const planFoodMeal = (args: Fns["lovable_plan_food_meal"]["Args"]) =>
   rpc("lovable_plan_food_meal", args);
 export const correctFoodInventory = (args: Fns["lovable_correct_food_inventory"]["Args"]) =>
   rpc("lovable_correct_food_inventory", args);
+export const undoFoodInventoryCorrection = (
+  args: Fns["lovable_undo_food_inventory_correction"]["Args"],
+) => rpc("lovable_undo_food_inventory_correction", args);
+
+function correctionId(result: unknown): string | null {
+  if (!result || typeof result !== "object" || Array.isArray(result)) return null;
+  const value = (result as Record<string, unknown>)["correction_id"];
+  return typeof value === "string" ? value : null;
+}
+
+export function useInventoryCorrectionAction() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: correctFoodInventory,
+    onSuccess: async (result) => {
+      const id = correctionId(result);
+      toast.success("Inventory updated", {
+        action: id
+          ? {
+              label: "Undo",
+              onClick: async () => {
+                try {
+                  await undoFoodInventoryCorrection({ p_correction_id: id });
+                  toast.success("Inventory change undone");
+                  await refreshFoodData(queryClient);
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Could not undo change");
+                }
+              },
+            }
+          : undefined,
+      });
+      await refreshFoodData(queryClient);
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+}
 export const completeFoodThaw = (args: Fns["lovable_complete_food_thaw"]["Args"]) =>
   rpc("lovable_complete_food_thaw", args);
 export const completeFoodMeal = (args: Fns["lovable_complete_food_meal"]["Args"]) =>
@@ -126,3 +167,40 @@ export const addPlannedMealItemToShopping = (
 
 export const MEAL_SLOTS = ["breakfast", "lunch", "dinner", "snack"] as const;
 export const INVENTORY_STATUSES = ["plenty", "some", "low", "out", "unknown"] as const;
+
+export function inventoryQuickCorrection(
+  item: InventoryOption,
+  action: InventoryQuickAction,
+): Fns["lovable_correct_food_inventory"]["Args"] {
+  const base = { p_inventory_id: item.inventory_id };
+
+  if (action === "finished") return { ...base, p_status: "out" };
+  if (action === "still_have") return base;
+
+  if (item.tracking_mode === "meals" && item.meals_remaining != null) {
+    const remaining = Math.max(0, item.meals_remaining - 1);
+    return {
+      ...base,
+      p_meals_remaining: remaining,
+      ...(remaining === 0 ? { p_status: "out" } : {}),
+    };
+  }
+
+  if (item.quantity != null) {
+    const quantity = Math.max(0, item.quantity - 1);
+    return {
+      ...base,
+      p_quantity: quantity,
+      ...(quantity === 0 ? { p_status: "out" } : {}),
+    };
+  }
+
+  const nextStatus: Record<string, string> = {
+    plenty: "some",
+    some: "low",
+    low: "out",
+    unknown: "some",
+    out: "out",
+  };
+  return { ...base, p_status: nextStatus[item.status ?? "unknown"] ?? "some" };
+}
