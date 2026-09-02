@@ -7,6 +7,7 @@ import { ProjectCompleteButton } from "@/components/projects/ProjectCompleteButt
 import { useProjects } from "@/lib/projects";
 import { formatDayTime } from "@/lib/household";
 import { cn, getInteractiveCardClasses } from "@/lib/utils";
+import { HomeSectionState } from "@/components/home/HomeSectionState";
 
 const STATUS_LABELS: Record<string, string> = {
   action_required: "Action required",
@@ -28,19 +29,24 @@ export function ProjectsSection({
 
   const list = projects.data ?? [];
 
-  if (!enabled || projects.isPending) return null;
-  if (!projects.error && list.length === 0 && !hasAttention) return null;
+  if (!enabled) return null;
 
   return (
     <section className="space-y-3">
       <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         Projects
       </h2>
-      {projects.error ? (
-        <p className="text-sm text-critical">{(projects.error as Error).message}</p>
-      ) : list.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No active projects.</p>
-      ) : (
+      <HomeSectionState
+        query={{
+          isPending: projects.isPending,
+          error: projects.error as Error | null,
+          refetch: projects.refetch,
+        }}
+        isEmpty={list.length === 0}
+        loadingMessage="Loading projects…"
+        emptyMessage={hasAttention ? "No active projects found." : "No active projects."}
+        errorMessage="Projects are temporarily unavailable."
+      >
         <div className="space-y-3">
           {list.length > 2 && (
             <Button
@@ -98,7 +104,7 @@ export function ProjectsSection({
             })}
           </div>
         </div>
-      )}
+      </HomeSectionState>
     </section>
   );
 }
