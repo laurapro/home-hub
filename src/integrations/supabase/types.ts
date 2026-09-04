@@ -3222,6 +3222,7 @@ export type Database = {
           custom_name: string | null
           household_id: string
           id: string
+          inventory_reconciled_at: string | null
           item_id: string | null
           needed_by: string | null
           priority: string
@@ -3240,6 +3241,7 @@ export type Database = {
           custom_name?: string | null
           household_id: string
           id?: string
+          inventory_reconciled_at?: string | null
           item_id?: string | null
           needed_by?: string | null
           priority?: string
@@ -3258,6 +3260,7 @@ export type Database = {
           custom_name?: string | null
           household_id?: string
           id?: string
+          inventory_reconciled_at?: string | null
           item_id?: string | null
           needed_by?: string | null
           priority?: string
@@ -4997,7 +5000,7 @@ export type Database = {
           p_name: string
           p_priority?: string
           p_quantity?: number
-          p_store_id?: string | null
+          p_store_id?: string
           p_unit?: string
         }
         Returns: {
@@ -5005,6 +5008,7 @@ export type Database = {
           custom_name: string | null
           household_id: string
           id: string
+          inventory_reconciled_at: string | null
           item_id: string | null
           needed_by: string | null
           priority: string
@@ -5061,6 +5065,7 @@ export type Database = {
           custom_name: string | null
           household_id: string
           id: string
+          inventory_reconciled_at: string | null
           item_id: string | null
           needed_by: string | null
           priority: string
@@ -5250,6 +5255,15 @@ export type Database = {
           waiting_on: string
         }[]
       }
+      get_lovable_shopping_inventory_matches: {
+        Args: { p_household_slug?: string }
+        Returns: {
+          inventory_id: string
+          inventory_reconciled_at: string
+          location_name: string
+          shopping_item_id: string
+        }[]
+      }
       get_lovable_shopping_items: {
         Args: { p_household_slug?: string; p_include_completed?: boolean }
         Returns: {
@@ -5352,6 +5366,7 @@ export type Database = {
           custom_name: string | null
           household_id: string
           id: string
+          inventory_reconciled_at: string | null
           item_id: string | null
           needed_by: string | null
           priority: string
@@ -5421,6 +5436,7 @@ export type Database = {
           custom_name: string | null
           household_id: string
           id: string
+          inventory_reconciled_at: string | null
           item_id: string | null
           needed_by: string | null
           priority: string
@@ -5450,10 +5466,6 @@ export type Database = {
           p_quantity_unit?: string
           p_status?: string
         }
-        Returns: Json
-      }
-      lovable_undo_food_inventory_correction: {
-        Args: { p_correction_id: string }
         Returns: Json
       }
       lovable_create_project: {
@@ -5510,6 +5522,10 @@ export type Database = {
         }
         Returns: Json
       }
+      lovable_reconcile_shopping_item_inventory: {
+        Args: { p_household_slug: string; p_shopping_item_id: string }
+        Returns: Json
+      }
       lovable_restore_shopping_item: {
         Args: { p_household_slug: string; p_shopping_item_id: string }
         Returns: {
@@ -5517,6 +5533,39 @@ export type Database = {
           custom_name: string | null
           household_id: string
           id: string
+          inventory_reconciled_at: string | null
+          item_id: string | null
+          needed_by: string | null
+          priority: string
+          purchase_id: string | null
+          purchased_at: string | null
+          quantity: number | null
+          reason: string | null
+          source: string | null
+          status: string
+          store_id: string | null
+          unit: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "shopping_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      lovable_set_shopping_item_store: {
+        Args: {
+          p_household_slug: string
+          p_shopping_item_id: string
+          p_store_id?: string
+        }
+        Returns: {
+          created_at: string
+          custom_name: string | null
+          household_id: string
+          id: string
+          inventory_reconciled_at: string | null
           item_id: string | null
           needed_by: string | null
           priority: string
@@ -5544,6 +5593,7 @@ export type Database = {
           custom_name: string | null
           household_id: string
           id: string
+          inventory_reconciled_at: string | null
           item_id: string | null
           needed_by: string | null
           priority: string
@@ -5564,36 +5614,9 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      lovable_set_shopping_item_store: {
-        Args: {
-          p_household_slug: string
-          p_shopping_item_id: string
-          p_store_id?: string | null
-        }
-        Returns: {
-          created_at: string
-          custom_name: string | null
-          household_id: string
-          id: string
-          item_id: string | null
-          needed_by: string | null
-          priority: string
-          purchase_id: string | null
-          purchased_at: string | null
-          quantity: number | null
-          reason: string | null
-          source: string | null
-          status: string
-          store_id: string | null
-          unit: string | null
-          updated_at: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "shopping_items"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+      lovable_undo_food_inventory_correction: {
+        Args: { p_correction_id: string }
+        Returns: Json
       }
       lovable_update_project: {
         Args: {
@@ -5668,6 +5691,7 @@ export type Database = {
           custom_name: string | null
           household_id: string
           id: string
+          inventory_reconciled_at: string | null
           item_id: string | null
           needed_by: string | null
           priority: string
@@ -5695,6 +5719,7 @@ export type Database = {
           custom_name: string | null
           household_id: string
           id: string
+          inventory_reconciled_at: string | null
           item_id: string | null
           needed_by: string | null
           priority: string
@@ -5733,12 +5758,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -5762,11 +5787,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -5787,11 +5812,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -5812,11 +5837,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -5829,11 +5854,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
