@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedFreezerRouteImport } from './routes/_authenticated/freezer'
 import { Route as AuthenticatedFridgeRouteImport } from './routes/_authenticated/fridge'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedKitchenRouteImport } from './routes/_authenticated/kitchen'
@@ -33,6 +34,11 @@ const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedFreezerRoute = AuthenticatedFreezerRouteImport.update({
+  id: '/freezer',
+  path: '/freezer',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedFridgeRoute = AuthenticatedFridgeRouteImport.update({
   id: '/fridge',
@@ -75,6 +81,7 @@ const AuthenticatedProjectsProjectIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/freezer': typeof AuthenticatedFreezerRoute
   '/fridge': typeof AuthenticatedFridgeRoute
   '/home': typeof AuthenticatedHomeRoute
   '/kitchen': typeof AuthenticatedKitchenRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/freezer': typeof AuthenticatedFreezerRoute
   '/fridge': typeof AuthenticatedFridgeRoute
   '/home': typeof AuthenticatedHomeRoute
   '/kitchen': typeof AuthenticatedKitchenRoute
@@ -99,6 +107,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/freezer': typeof AuthenticatedFreezerRoute
   '/_authenticated/fridge': typeof AuthenticatedFridgeRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/kitchen': typeof AuthenticatedKitchenRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/freezer'
     | '/fridge'
     | '/home'
     | '/kitchen'
@@ -123,6 +133,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/freezer'
     | '/fridge'
     | '/home'
     | '/kitchen'
@@ -135,6 +146,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/freezer'
     | '/_authenticated/fridge'
     | '/_authenticated/home'
     | '/_authenticated/kitchen'
@@ -172,6 +184,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/freezer': {
+      id: '/_authenticated/freezer'
+      path: '/freezer'
+      fullPath: '/freezer'
+      preLoaderRoute: typeof AuthenticatedFreezerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/fridge': {
       id: '/_authenticated/fridge'
@@ -226,6 +245,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedFreezerRoute: typeof AuthenticatedFreezerRoute
   AuthenticatedFridgeRoute: typeof AuthenticatedFridgeRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedKitchenRoute: typeof AuthenticatedKitchenRoute
@@ -236,6 +256,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedFreezerRoute: AuthenticatedFreezerRoute,
   AuthenticatedFridgeRoute: AuthenticatedFridgeRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedKitchenRoute: AuthenticatedKitchenRoute,
