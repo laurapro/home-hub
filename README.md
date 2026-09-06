@@ -63,3 +63,15 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Legacy read-only display
+
+`/legacy-display` is a server-rendered, JavaScript-free daily dashboard for
+legacy browsers such as Internet Explorer 11 on Windows RT. It is intentionally
+read-only and refreshes once every 24 hours.
+
+The deployed server must provide `LEGACY_DISPLAY_PIN` as a protected environment
+secret containing at least eight characters. The PIN is submitted once over
+HTTPS and exchanged for a secure, HTTP-only device cookie. Household queries use
+the existing server-only Supabase service client; no privileged key or household
+data is included in browser JavaScript.
