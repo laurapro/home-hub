@@ -1,19 +1,38 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
+import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { AuthStatusScreen } from "@/components/auth/AuthStatusScreen";
+import { useAuthSession } from "@/lib/auth-session";
 
+// The Supabase session lives only in the browser, so this subtree is client
+// rendered. The auth decision is made in the component (after hydration) rather
+// than in `beforeLoad`: throwing a redirect while React is still hydrating the
+// server shell swaps the router's match tree mid-hydration, which produced the
+// "Invariant failed" / React #418 #422 #520 errors and a blank page on fresh
+// browsers. Protected content never renders until a session is confirmed.
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
-    return { user: data.user };
-  },
   component: AuthenticatedLayout,
+  pendingComponent: () => <AuthStatusScreen />,
 });
 
 function AuthenticatedLayout() {
+  const auth = useAuthSession();
+
+  if (auth.status === "loading") return <AuthStatusScreen />;
+
+  if (auth.status === "signed_out") {
+    return (
+      <>
+        <AuthStatusScreen
+          title="Redirecting to sign in…"
+          detail={auth.error ? `Your session ended: ${auth.error}` : null}
+        />
+        <Navigate to="/auth" replace />
+      </>
+    );
+  }
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">

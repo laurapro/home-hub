@@ -1,9 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AuthStatusScreen } from "@/components/auth/AuthStatusScreen";
+import { useAuthSession } from "@/lib/auth-session";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -28,16 +30,23 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const auth = useAuthSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    void supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/home", replace: true });
-    });
-  }, [navigate]);
+  // Explicit initialization state: never a blank screen, and an existing
+  // session is sent to /home only after hydration has completed.
+  if (auth.status === "loading") return <AuthStatusScreen />;
+  if (auth.status === "signed_in") {
+    return (
+      <>
+        <AuthStatusScreen title="Opening your home…" />
+        <Navigate to="/home" replace />
+      </>
+    );
+  }
 
   async function handleSignIn(event: React.FormEvent) {
     event.preventDefault();
