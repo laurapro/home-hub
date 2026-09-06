@@ -165,7 +165,7 @@ export function ShoppingItemsList({
     setStore.mutate({
       p_household_slug: HOUSEHOLD_SLUG,
       p_shopping_item_id: item.id,
-      p_store_id: storeId === NO_STORE ? null : storeId,
+      p_store_id: (storeId === NO_STORE ? null : storeId) as string,
     });
   }
 

@@ -12,8 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedFreezerRouteImport } from './routes/_authenticated/freezer'
+import { Route as AuthenticatedFridgeRouteImport } from './routes/_authenticated/fridge'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedKitchenRouteImport } from './routes/_authenticated/kitchen'
+import { Route as AuthenticatedPantryRouteImport } from './routes/_authenticated/pantry'
 import { Route as AuthenticatedPetsRouteImport } from './routes/_authenticated/pets'
 import { Route as AuthenticatedShoppingRouteImport } from './routes/_authenticated/shopping'
 import { Route as AuthenticatedMealsPlannedMealIdRouteImport } from './routes/_authenticated/meals/$plannedMealId'
@@ -33,6 +36,16 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedFreezerRoute = AuthenticatedFreezerRouteImport.update({
+  id: '/freezer',
+  path: '/freezer',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFridgeRoute = AuthenticatedFridgeRouteImport.update({
+  id: '/fridge',
+  path: '/fridge',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -41,6 +54,11 @@ const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
 const AuthenticatedKitchenRoute = AuthenticatedKitchenRouteImport.update({
   id: '/kitchen',
   path: '/kitchen',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPantryRoute = AuthenticatedPantryRouteImport.update({
+  id: '/pantry',
+  path: '/pantry',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPetsRoute = AuthenticatedPetsRouteImport.update({
@@ -69,8 +87,11 @@ const AuthenticatedProjectsProjectIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/freezer': typeof AuthenticatedFreezerRoute
+  '/fridge': typeof AuthenticatedFridgeRoute
   '/home': typeof AuthenticatedHomeRoute
   '/kitchen': typeof AuthenticatedKitchenRoute
+  '/pantry': typeof AuthenticatedPantryRoute
   '/pets': typeof AuthenticatedPetsRoute
   '/shopping': typeof AuthenticatedShoppingRoute
   '/meals/$plannedMealId': typeof AuthenticatedMealsPlannedMealIdRoute
@@ -79,8 +100,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/freezer': typeof AuthenticatedFreezerRoute
+  '/fridge': typeof AuthenticatedFridgeRoute
   '/home': typeof AuthenticatedHomeRoute
   '/kitchen': typeof AuthenticatedKitchenRoute
+  '/pantry': typeof AuthenticatedPantryRoute
   '/pets': typeof AuthenticatedPetsRoute
   '/shopping': typeof AuthenticatedShoppingRoute
   '/meals/$plannedMealId': typeof AuthenticatedMealsPlannedMealIdRoute
@@ -91,8 +115,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/freezer': typeof AuthenticatedFreezerRoute
+  '/_authenticated/fridge': typeof AuthenticatedFridgeRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/kitchen': typeof AuthenticatedKitchenRoute
+  '/_authenticated/pantry': typeof AuthenticatedPantryRoute
   '/_authenticated/pets': typeof AuthenticatedPetsRoute
   '/_authenticated/shopping': typeof AuthenticatedShoppingRoute
   '/_authenticated/meals/$plannedMealId': typeof AuthenticatedMealsPlannedMealIdRoute
@@ -103,8 +130,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/freezer'
+    | '/fridge'
     | '/home'
     | '/kitchen'
+    | '/pantry'
     | '/pets'
     | '/shopping'
     | '/meals/$plannedMealId'
@@ -113,8 +143,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/freezer'
+    | '/fridge'
     | '/home'
     | '/kitchen'
+    | '/pantry'
     | '/pets'
     | '/shopping'
     | '/meals/$plannedMealId'
@@ -124,8 +157,11 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/freezer'
+    | '/_authenticated/fridge'
     | '/_authenticated/home'
     | '/_authenticated/kitchen'
+    | '/_authenticated/pantry'
     | '/_authenticated/pets'
     | '/_authenticated/shopping'
     | '/_authenticated/meals/$plannedMealId'
@@ -161,6 +197,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/freezer': {
+      id: '/_authenticated/freezer'
+      path: '/freezer'
+      fullPath: '/freezer'
+      preLoaderRoute: typeof AuthenticatedFreezerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/fridge': {
+      id: '/_authenticated/fridge'
+      path: '/fridge'
+      fullPath: '/fridge'
+      preLoaderRoute: typeof AuthenticatedFridgeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/home': {
       id: '/_authenticated/home'
       path: '/home'
@@ -173,6 +223,13 @@ declare module '@tanstack/react-router' {
       path: '/kitchen'
       fullPath: '/kitchen'
       preLoaderRoute: typeof AuthenticatedKitchenRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pantry': {
+      id: '/_authenticated/pantry'
+      path: '/pantry'
+      fullPath: '/pantry'
+      preLoaderRoute: typeof AuthenticatedPantryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/pets': {
@@ -207,8 +264,11 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedFreezerRoute: typeof AuthenticatedFreezerRoute
+  AuthenticatedFridgeRoute: typeof AuthenticatedFridgeRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedKitchenRoute: typeof AuthenticatedKitchenRoute
+  AuthenticatedPantryRoute: typeof AuthenticatedPantryRoute
   AuthenticatedPetsRoute: typeof AuthenticatedPetsRoute
   AuthenticatedShoppingRoute: typeof AuthenticatedShoppingRoute
   AuthenticatedMealsPlannedMealIdRoute: typeof AuthenticatedMealsPlannedMealIdRoute
@@ -216,8 +276,11 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedFreezerRoute: AuthenticatedFreezerRoute,
+  AuthenticatedFridgeRoute: AuthenticatedFridgeRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedKitchenRoute: AuthenticatedKitchenRoute,
+  AuthenticatedPantryRoute: AuthenticatedPantryRoute,
   AuthenticatedPetsRoute: AuthenticatedPetsRoute,
   AuthenticatedShoppingRoute: AuthenticatedShoppingRoute,
   AuthenticatedMealsPlannedMealIdRoute: AuthenticatedMealsPlannedMealIdRoute,
