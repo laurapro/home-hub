@@ -17,7 +17,9 @@ function IndexPage() {
 
   return (
     <>
-      <AuthStatusScreen title={auth.status === "signed_in" ? "Opening your home…" : "Redirecting to sign in…"} />
+      <AuthStatusScreen
+        title={auth.status === "signed_in" ? "Opening your home…" : "Redirecting to sign in…"}
+      />
       <Navigate to={auth.status === "signed_in" ? "/home" : "/auth"} replace />
     </>
   );

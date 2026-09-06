@@ -31,6 +31,7 @@ import {
 import { cn, getInteractiveCardClasses } from "@/lib/utils";
 import { useProjects } from "@/lib/projects";
 import { usePetsAttention, type PetAttention } from "@/lib/pets";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/home")({
   head: () => ({
@@ -444,9 +445,13 @@ function HomePage() {
   const shoppingStores = data.shopping;
 
   async function handleSignOut() {
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+    if (error) {
+      toast.error(`Could not sign out: ${error.message}`);
+      return;
+    }
     await queryClient.cancelQueries();
     queryClient.clear();
-    await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }
 
