@@ -5129,6 +5129,28 @@ export type Database = {
           tracking_mode: string
         }[]
       }
+      get_lovable_food_recipe_log_options: {
+        Args: { p_household_slug?: string }
+        Returns: {
+          ingredient_id: string
+          inventory_id: string
+          inventory_quantity: number
+          inventory_quantity_unit: string
+          inventory_status: string
+          item_id: string
+          item_name: string
+          location_name: string
+          location_type: string
+          meals_remaining: number
+          recipe_id: string
+          recipe_name: string
+          recipe_quantity: number
+          recipe_unit: string
+          required: boolean
+          sort_order: number
+          tracking_mode: string
+        }[]
+      }
       get_lovable_food_recipes: {
         Args: { p_household_slug?: string }
         Returns: {
@@ -5501,6 +5523,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      lovable_log_food_meal: {
+        Args: { p_eaten_on?: string; p_recipe_id: string; p_request_id: string }
+        Returns: Json
       }
       lovable_mark_pet_medication_given: {
         Args: {
