@@ -1,9 +1,5 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
-
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const COOKIE_NAME = "home_hub_legacy_display";
-const COOKIE_MAX_AGE_SECONDS = 180 * 24 * 60 * 60;
 const REFRESH_SECONDS = 24 * 60 * 60;
 
 type TimelineRow = {
@@ -54,8 +50,8 @@ type LegacyDisplayData = {
   urgentShoppingCount: number;
 };
 
-function pageHeaders(extra?: HeadersInit): Headers {
-  const headers = new Headers(extra);
+function pageHeaders(): Headers {
+  const headers = new Headers();
   headers.set("content-type", "text/html; charset=utf-8");
   headers.set("cache-control", "no-store, max-age=0");
   headers.set("pragma", "no-cache");
@@ -64,7 +60,7 @@ function pageHeaders(extra?: HeadersInit): Headers {
   headers.set("x-robots-tag", "noindex, nofollow, noarchive");
   headers.set(
     "content-security-policy",
-    "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+    "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
   );
   return headers;
 }
@@ -76,28 +72,6 @@ function escapeHtml(value: unknown): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
-}
-
-function cookieValue(request: Request, name: string): string | null {
-  const cookies = request.headers.get("cookie") ?? "";
-  for (const part of cookies.split(";")) {
-    const separator = part.indexOf("=");
-    if (separator < 0) continue;
-    if (part.slice(0, separator).trim() === name) {
-      return decodeURIComponent(part.slice(separator + 1).trim());
-    }
-  }
-  return null;
-}
-
-function displaySignature(pin: string): string {
-  return createHmac("sha256", pin).update("home-hub-legacy-display-v1").digest("hex");
-}
-
-function safeEqual(left: string, right: string): boolean {
-  const leftBuffer = Buffer.from(left);
-  const rightBuffer = Buffer.from(right);
-  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
 }
 
 function shell(title: string, body: string, refresh = false): string {
@@ -127,32 +101,12 @@ function shell(title: string, body: string, refresh = false): string {
     .title { font-size: 21px; font-weight: bold; }
     .meta { margin-top: 7px; color: #756b62; }
     .empty { padding: 18px; background: #fffdf8; border: 1px solid #ddd2bf; color: #756b62; }
-    .login { width: 360px; max-width: 85%; margin: 80px auto; padding: 28px; background: #fffdf8; border: 1px solid #ddd2bf; }
-    label { display: block; margin: 18px 0 6px; font-weight: bold; }
-    input { box-sizing: border-box; width: 100%; padding: 12px; font-size: 20px; border: 1px solid #998f85; }
-    button { margin-top: 16px; padding: 12px 22px; font-size: 18px; color: #fff; background: #5c9b75; border: 0; }
-    .error { color: #9b342b; font-weight: bold; }
+    .message { width: 520px; max-width: 85%; margin: 80px auto; padding: 28px; background: #fffdf8; border: 1px solid #ddd2bf; }
     @media screen and (max-width: 700px) { .card { display: block; width: auto; } h1 { font-size: 30px; } }
   </style>
 </head>
 <body>${body}</body>
 </html>`;
-}
-
-function renderLogin(errorMessage?: string): string {
-  return shell(
-    "Home Hub Display",
-    `<div class="login">
-      <h1>Home Hub</h1>
-      <p class="subtle">Enter the display PIN once on this tablet.</p>
-      ${errorMessage ? `<p class="error">${escapeHtml(errorMessage)}</p>` : ""}
-      <form method="post" action="/legacy-display">
-        <label for="pin">Display PIN</label>
-        <input id="pin" name="pin" type="password" inputmode="numeric" autocomplete="off" minlength="8" required>
-        <button type="submit">Open display</button>
-      </form>
-    </div>`,
-  );
 }
 
 function formatDateTime(value: string | null, timeZone = "America/Chicago"): string {
@@ -289,51 +243,18 @@ async function loadDisplayData(): Promise<LegacyDisplayData> {
   };
 }
 
-export async function handleLegacyDisplay(request: Request): Promise<Response> {
-  const configuredPin = process.env["LEGACY_DISPLAY_PIN"];
-  if (!configuredPin || configuredPin.length < 8) {
-    return new Response(
-      shell(
-        "Display unavailable",
-        '<div class="login"><h1>Display unavailable</h1><p>The display PIN has not been configured yet.</p></div>',
-      ),
-      {
-        status: 503,
-        headers: pageHeaders(),
-      },
-    );
-  }
-
-  const expectedSignature = displaySignature(configuredPin);
-  let authorized = safeEqual(cookieValue(request, COOKIE_NAME) ?? "", expectedSignature);
-  let setCookie: string | undefined;
-
-  if (request.method === "POST") {
-    const form = await request.formData();
-    const submittedPin = String(form.get("pin") ?? "");
-    authorized = safeEqual(submittedPin, configuredPin);
-    if (!authorized) {
-      return new Response(renderLogin("That PIN was not accepted."), {
-        status: 401,
-        headers: pageHeaders(),
-      });
-    }
-    setCookie = `${COOKIE_NAME}=${encodeURIComponent(expectedSignature)}; Path=/legacy-display; Max-Age=${COOKIE_MAX_AGE_SECONDS}; HttpOnly; Secure; SameSite=Lax`;
-  }
-
-  if (!authorized) return new Response(renderLogin(), { headers: pageHeaders() });
-
+export async function handleLegacyDisplay(): Promise<Response> {
   try {
     const data = await loadDisplayData();
     return new Response(renderLegacyDisplayPage(data), {
-      headers: pageHeaders(setCookie ? { "set-cookie": setCookie } : undefined),
+      headers: pageHeaders(),
     });
   } catch (error) {
     console.error("Legacy display failed", error);
     return new Response(
       shell(
         "Display temporarily unavailable",
-        '<div class="login"><h1>Temporarily unavailable</h1><p>The display could not load household data. It is safe to refresh and try again.</p></div>',
+        '<div class="message"><h1>Temporarily unavailable</h1><p>The display could not load household data. It is safe to refresh and try again.</p></div>',
       ),
       {
         status: 503,

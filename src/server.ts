@@ -50,7 +50,7 @@ export default {
       const url = new URL(request.url);
       if (url.pathname === "/legacy-display" || url.pathname === "/legacy-display/") {
         const { handleLegacyDisplay } = await import("./lib/legacy-display.server");
-        return await handleLegacyDisplay(request);
+        return await handleLegacyDisplay();
       }
 
       const handler = await getServerEntry();
