@@ -5281,7 +5281,7 @@ export type Database = {
         Args: { p_household_slug?: string }
         Returns: {
           inventory_id: string
-          inventory_reconciled_at: string
+          inventory_reconciled_at: string | null
           location_name: string
           shopping_item_id: string
         }[]

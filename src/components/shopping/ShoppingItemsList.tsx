@@ -27,10 +27,12 @@ import {
   completeShoppingItem,
   isOpenShoppingItem,
   isRecentlyResolved,
+  reconcileShoppingItemInventory,
   restoreShoppingItem,
   skipShoppingItem,
   useShoppingAction,
   useShoppingItems,
+  useShoppingInventoryMatches,
   useSetShoppingItemStore,
   useStores,
   type ShoppingItem,
@@ -39,7 +41,7 @@ import {
 import { groupShoppingItemsByStore, UNCATEGORIZED_STORE_KEY } from "@/lib/shopping-groups";
 import { HOUSEHOLD_SLUG, formatDay } from "@/lib/household";
 
-type PendingAction = { kind: "complete" | "skip"; item: ShoppingItem } | null;
+type PendingAction = { kind: "complete" | "skip" | "reconcile"; item: ShoppingItem } | null;
 const NO_STORE = "__none__";
 
 function ItemRow({
@@ -118,15 +120,28 @@ export function ShoppingItemsList({
 
   const items = useShoppingItems(enabled && expanded);
   const complete = useShoppingAction(completeShoppingItem, "Marked as purchased");
+  const reconcile = useShoppingAction(
+    reconcileShoppingItemInventory,
+    "Added purchase to inventory",
+  );
   const skip = useShoppingAction(skipShoppingItem, "Skipped");
   const restore = useShoppingAction(restoreShoppingItem, "Restored to list");
   const stores = useStores(enabled && expanded);
+  const inventoryMatches = useShoppingInventoryMatches(enabled && expanded);
   const setStore = useSetShoppingItemStore(stores.data ?? []);
-  const busy = complete.isPending || skip.isPending || restore.isPending || setStore.isPending;
+  const busy =
+    complete.isPending ||
+    reconcile.isPending ||
+    skip.isPending ||
+    restore.isPending ||
+    setStore.isPending;
 
   const all = items.data ?? [];
   const open = all.filter(isOpenShoppingItem);
   const recent = all.filter(isRecentlyResolved);
+  const matchByShoppingItem = new Map(
+    (inventoryMatches.data ?? []).map((match) => [match.shopping_item_id, match]),
+  );
   const storeGroups = groupShoppingItemsByStore(open, stores.data ?? []);
 
   function runConfirmed() {
@@ -139,6 +154,7 @@ export function ShoppingItemsList({
     };
     if (action.kind === "complete") complete.mutate(args);
     if (action.kind === "skip") skip.mutate(args);
+    if (action.kind === "reconcile") reconcile.mutate(args);
   }
 
   function changeStore(item: ShoppingItem, storeId: string) {
@@ -247,6 +263,21 @@ export function ShoppingItemsList({
                       storeBusy={setStore.isPending}
                       onStoreChange={changeStore}
                     >
+                      {matchByShoppingItem.get(item.id) &&
+                        (matchByShoppingItem.get(item.id)?.inventory_reconciled_at ? (
+                          <span className="px-2 text-sm text-muted-foreground">
+                            Added to inventory
+                          </span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className="h-11"
+                            disabled={busy}
+                            onClick={() => setConfirm({ kind: "reconcile", item })}
+                          >
+                            Put away
+                          </Button>
+                        ))}
                       <Button
                         size="sm"
                         variant="outline"
@@ -274,12 +305,18 @@ export function ShoppingItemsList({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirm?.kind === "complete" ? "Mark item as purchased?" : "Skip this item?"}
+              {confirm?.kind === "complete"
+                ? "Mark item as purchased?"
+                : confirm?.kind === "reconcile"
+                  ? "Add this purchase to inventory?"
+                  : "Skip this item?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirm?.kind === "complete"
                 ? "The item will be recorded as purchased in the household record."
-                : "The item will be skipped for this shopping trip."}
+                : confirm?.kind === "reconcile"
+                  ? `Add ${confirm.item.quantity ?? 1}${confirm.item.unit ? ` ${confirm.item.unit}` : ""} to ${matchByShoppingItem.get(confirm.item.id)?.location_name ?? "inventory"}. This only happens after you confirm.`
+                  : "The item will be skipped for this shopping trip."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -291,7 +328,11 @@ export function ShoppingItemsList({
                 runConfirmed();
               }}
             >
-              {confirm?.kind === "complete" ? "Complete" : "Skip"}
+              {confirm?.kind === "complete"
+                ? "Complete"
+                : confirm?.kind === "reconcile"
+                  ? "Add to inventory"
+                  : "Skip"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

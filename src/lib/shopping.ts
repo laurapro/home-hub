@@ -7,6 +7,8 @@ import { HOUSEHOLD_SLUG } from "./household";
 type Fns = Database["public"]["Functions"];
 export type ShoppingItem = Fns["get_lovable_shopping_items"]["Returns"][number];
 export type Store = Fns["get_lovable_stores"]["Returns"][number];
+export type ShoppingInventoryMatch =
+  Fns["get_lovable_shopping_inventory_matches"]["Returns"][number];
 
 export const SHOPPING_PRIORITIES = ["low", "normal", "high", "urgent"] as const;
 
@@ -39,8 +41,29 @@ export function useShoppingItems(enabled: boolean) {
   });
 }
 
+export function useShoppingInventoryMatches(enabled: boolean) {
+  return useQuery({
+    queryKey: ["shopping-inventory-matches", HOUSEHOLD_SLUG],
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_lovable_shopping_inventory_matches", {
+        p_household_slug: HOUSEHOLD_SLUG,
+      });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as ShoppingInventoryMatch[];
+    },
+  });
+}
+
 /** Canonical reads to refresh after any Shopping write. */
-const REFRESH_KEYS = ["shopping-summary", "shopping-items", "household-attention", "home-meals"];
+const REFRESH_KEYS = [
+  "shopping-summary",
+  "shopping-items",
+  "shopping-inventory-matches",
+  "household-attention",
+  "home-meals",
+  "food-inventory",
+];
 
 export function useShoppingAction<TArgs>(
   run: (args: TArgs) => Promise<unknown>,
@@ -120,6 +143,9 @@ export const restoreShoppingItem = (args: Fns["lovable_restore_shopping_item"]["
   rpc("lovable_restore_shopping_item", args);
 export const setShoppingItemStore = (args: Fns["lovable_set_shopping_item_store"]["Args"]) =>
   rpc("lovable_set_shopping_item_store", args);
+export const reconcileShoppingItemInventory = (
+  args: Fns["lovable_reconcile_shopping_item_inventory"]["Args"],
+) => rpc("lovable_reconcile_shopping_item_inventory", args);
 
 const DONE_STATUSES = new Set(["purchased", "skipped", "completed"]);
 
