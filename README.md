@@ -71,7 +71,14 @@ legacy browsers such as Internet Explorer 11 on Windows RT. It is intentionally
 read-only and refreshes once every 24 hours.
 
 The route is intentionally available without a PIN so the old tablet can open it
-directly. Anyone who knows the URL can view this summary, but the page contains no
-controls or write endpoint. It is marked `noindex` for search engines. Household
-queries use the existing server-only Supabase service client; no privileged key
-or household data is included in browser JavaScript.
+directly. Anyone who knows the URL can view this summary. It is marked `noindex`
+for search engines. Household queries use the existing server-only Supabase
+service client; no privileged key or household data is included in browser
+JavaScript.
+
+To let one tablet record a due pet medication, configure a random 32-character or
+longer `LEGACY_DISPLAY_ACTION_TOKEN` server secret. Enroll the tablet once by
+opening `/legacy-display?device=YOUR_TOKEN`; the server removes the token from the
+URL and stores a secure, HTTP-only device cookie. Only enrolled displays receive
+signed medication forms. Rotating the environment secret revokes enrolled
+devices. All other parts of the legacy display remain view-only.

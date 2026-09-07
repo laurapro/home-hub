@@ -1,5 +1,9 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
+
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+const ACTION_COOKIE_NAME = "home_hub_legacy_action";
+const ACTION_COOKIE_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;
 const REFRESH_SECONDS = 24 * 60 * 60;
 
 type TimelineRow = {
@@ -33,11 +37,14 @@ type ShoppingRow = {
 };
 
 type PetRow = {
+  entity_id: string | null;
+  entity_type: string | null;
   due_at: string | null;
   human_action: string | null;
   medication_name: string | null;
   pet_name: string | null;
   severity: string | null;
+  scheduled_for: string | null;
 };
 
 type LegacyDisplayData = {
@@ -60,8 +67,9 @@ function pageHeaders(): Headers {
   headers.set("x-robots-tag", "noindex, nofollow, noarchive");
   headers.set(
     "content-security-policy",
-    "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'",
+    "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
   );
+  headers.set("referrer-policy", "no-referrer");
   return headers;
 }
 
@@ -72,6 +80,34 @@ function escapeHtml(value: unknown): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function safeEqual(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+function cookieValue(request: Request, name: string): string | null {
+  const cookies = request.headers.get("cookie") ?? "";
+  for (const part of cookies.split(";")) {
+    const separator = part.indexOf("=");
+    if (separator < 0) continue;
+    if (part.slice(0, separator).trim() === name) {
+      return decodeURIComponent(part.slice(separator + 1).trim());
+    }
+  }
+  return null;
+}
+
+function actionCookieSignature(secret: string): string {
+  return createHmac("sha256", secret).update("home-hub-legacy-action-device-v1").digest("hex");
+}
+
+function medicationActionProof(secret: string, medicationId: string, scheduledFor: string): string {
+  return createHmac("sha256", secret)
+    .update(`give-medication:${medicationId}:${scheduledFor}`)
+    .digest("hex");
 }
 
 function shell(title: string, body: string, refresh = false): string {
@@ -102,6 +138,9 @@ function shell(title: string, body: string, refresh = false): string {
     .meta { margin-top: 7px; color: #756b62; }
     .empty { padding: 18px; background: #fffdf8; border: 1px solid #ddd2bf; color: #756b62; }
     .message { width: 520px; max-width: 85%; margin: 80px auto; padding: 28px; background: #fffdf8; border: 1px solid #ddd2bf; }
+    .notice { margin-top: 14px; padding: 12px 16px; background: #dff1df; border: 1px solid #9fc49f; font-weight: bold; }
+    form { margin-top: 14px; }
+    button { padding: 12px 18px; font-size: 18px; font-weight: bold; color: #2d2823; background: #d8eddc; border: 2px solid #75a681; cursor: pointer; }
     @media screen and (max-width: 700px) { .card { display: block; width: auto; } h1 { font-size: 30px; } }
   </style>
 </head>
@@ -129,7 +168,11 @@ function cards<T>(items: T[], render: (item: T) => string, empty: string): strin
     : `<div class="empty">${escapeHtml(empty)}</div>`;
 }
 
-export function renderLegacyDisplayPage(data: LegacyDisplayData): string {
+export function renderLegacyDisplayPage(
+  data: LegacyDisplayData,
+  medicationActionSecret?: string,
+  notice?: string,
+): string {
   const now = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Chicago",
     weekday: "long",
@@ -157,15 +200,32 @@ export function renderLegacyDisplayPage(data: LegacyDisplayData): string {
   );
   const pets = cards(
     data.pets,
-    (item) =>
-      `<div class="card pets"><div class="title">${escapeHtml(item.pet_name || "Pet")} ${item.medication_name ? `&mdash; ${escapeHtml(item.medication_name)}` : ""}</div><div class="meta">${escapeHtml(item.human_action || item.severity || "")}${item.due_at ? ` &middot; ${escapeHtml(formatDateTime(item.due_at))}` : ""}</div></div>`,
+    (item) => {
+      const canMarkGiven = Boolean(
+        medicationActionSecret &&
+        item.entity_type === "pet_medication" &&
+        (item.severity === "critical" || item.severity === "due") &&
+        item.entity_id &&
+        item.scheduled_for,
+      );
+      const action = canMarkGiven
+        ? `<form method="post" action="/legacy-display">
+            <input type="hidden" name="action" value="give-medication">
+            <input type="hidden" name="medication_id" value="${escapeHtml(item.entity_id)}">
+            <input type="hidden" name="scheduled_for" value="${escapeHtml(item.scheduled_for)}">
+            <input type="hidden" name="proof" value="${medicationActionProof(medicationActionSecret!, item.entity_id!, item.scheduled_for!)}">
+            <button type="submit">&#10003; Mark pill given</button>
+          </form>`
+        : "";
+      return `<div class="card pets"><div class="title">${escapeHtml(item.pet_name || "Pet")} ${item.medication_name ? `&mdash; ${escapeHtml(item.medication_name)}` : ""}</div><div class="meta">${escapeHtml(item.human_action || item.severity || "")}${item.due_at ? ` &middot; ${escapeHtml(formatDateTime(item.due_at))}` : ""}</div>${action}</div>`;
+    },
     "Pets are all set.",
   );
 
   return shell(
     `${data.householdName} — Home Hub`,
     `<div class="wrap">
-      <div class="header"><h1>Today at home</h1><div class="subtle">${escapeHtml(now)} &middot; Read-only daily display</div></div>
+      <div class="header"><h1>Today at home</h1><div class="subtle">${escapeHtml(now)} &middot; Daily display</div>${notice ? `<div class="notice">${escapeHtml(notice)}</div>` : ""}</div>
       <h2>Schedule</h2>${schedule}
       <h2>Needs you</h2>${attention}
       <h2>Meals</h2>${meals}
@@ -213,7 +273,7 @@ async function loadDisplayData(): Promise<LegacyDisplayData> {
       .eq("household_id", household.id),
     supabaseAdmin
       .from("pets_medication_attention_items")
-      .select("pet_name, medication_name, human_action, due_at, severity")
+      .select("pet_name, medication_name, human_action, due_at, severity, entity_id, entity_type")
       .eq("household_id", household.id)
       .in("severity", ["critical", "due", "upcoming"])
       .order("severity_rank")
@@ -234,7 +294,15 @@ async function loadDisplayData(): Promise<LegacyDisplayData> {
     timeline: timeline.data ?? [],
     attention: attention.data ?? [],
     meals: meals.data ?? [],
-    pets: pets.data ?? [],
+    pets: (pets.data ?? []).map((item) => ({
+      ...item,
+      scheduled_for:
+        item.entity_type === "pet_medication" && item.due_at
+          ? new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago" }).format(
+              new Date(item.due_at),
+            )
+          : null,
+    })),
     shoppingCount: (shopping.data ?? []).reduce((total, row) => total + (row.item_count ?? 0), 0),
     urgentShoppingCount: (shopping.data ?? []).reduce(
       (total, row) => total + (row.urgent_count ?? 0),
@@ -243,10 +311,100 @@ async function loadDisplayData(): Promise<LegacyDisplayData> {
   };
 }
 
-export async function handleLegacyDisplay(): Promise<Response> {
+function validActionSecret(): string | null {
+  const secret = process.env["LEGACY_DISPLAY_ACTION_TOKEN"];
+  return secret && secret.length >= 32 ? secret : null;
+}
+
+function redirectToDisplay(headers?: HeadersInit): Response {
+  return new Response(null, {
+    status: 303,
+    headers: { location: "/legacy-display", ...headers },
+  });
+}
+
+export async function handleLegacyDisplay(request: Request): Promise<Response> {
+  const secret = validActionSecret();
+  const url = new URL(request.url);
+
+  if (
+    request.method === "GET" &&
+    secret &&
+    safeEqual(url.searchParams.get("device") ?? "", secret)
+  ) {
+    return redirectToDisplay({
+      "set-cookie": `${ACTION_COOKIE_NAME}=${actionCookieSignature(secret)}; Path=/legacy-display; Max-Age=${ACTION_COOKIE_MAX_AGE_SECONDS}; HttpOnly; Secure; SameSite=Strict`,
+    });
+  }
+
+  const actionEnabled =
+    !!secret &&
+    safeEqual(cookieValue(request, ACTION_COOKIE_NAME) ?? "", actionCookieSignature(secret));
+
+  if (request.method === "POST") {
+    if (!secret || !actionEnabled) {
+      return new Response(
+        shell(
+          "Action unavailable",
+          '<div class="message"><h1>Action unavailable</h1><p>This tablet is not enrolled to record medication.</p></div>',
+        ),
+        { status: 403, headers: pageHeaders() },
+      );
+    }
+
+    const form = await request.formData();
+    const medicationId = String(form.get("medication_id") ?? "");
+    const scheduledFor = String(form.get("scheduled_for") ?? "");
+    const proof = String(form.get("proof") ?? "");
+    const validMedicationId =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        medicationId,
+      );
+    const validDate = /^\d{4}-\d{2}-\d{2}$/.test(scheduledFor);
+    const validProof = safeEqual(proof, medicationActionProof(secret, medicationId, scheduledFor));
+
+    if (
+      form.get("action") !== "give-medication" ||
+      !validMedicationId ||
+      !validDate ||
+      !validProof
+    ) {
+      return new Response(
+        shell(
+          "Invalid action",
+          '<div class="message"><h1>Invalid action</h1><p>The medication was not changed. Refresh the display and try again.</p></div>',
+        ),
+        { status: 400, headers: pageHeaders() },
+      );
+    }
+
+    const { error } = await supabaseAdmin.rpc("mark_pet_medication_given", {
+      p_actor_ref: "legacy-display",
+      p_pet_medication_id: medicationId,
+      p_scheduled_for: scheduledFor,
+    });
+    if (error) {
+      console.error("Legacy medication action failed", error);
+      return new Response(
+        shell(
+          "Medication not recorded",
+          '<div class="message"><h1>Medication not recorded</h1><p>The pill was not changed. Refresh the display and try again.</p></div>',
+        ),
+        { status: 409, headers: pageHeaders() },
+      );
+    }
+
+    return new Response(null, {
+      status: 303,
+      headers: { location: "/legacy-display?pill=recorded" },
+    });
+  }
+
   try {
     const data = await loadDisplayData();
-    return new Response(renderLegacyDisplayPage(data), {
+    const notice =
+      url.searchParams.get("pill") === "recorded" ? "Pill recorded as given." : undefined;
+    return new Response(renderLegacyDisplayPage(data, actionEnabled ? secret : undefined, notice), {
       headers: pageHeaders(),
     });
   } catch (error) {
