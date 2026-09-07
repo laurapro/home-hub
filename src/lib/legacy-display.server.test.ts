@@ -16,7 +16,6 @@ describe("legacy display", () => {
       householdName: "Laura & family",
       meals: [],
       pets: [],
-      shoppingCount: 2,
       timeline: [
         {
           all_day: true,
@@ -27,7 +26,6 @@ describe("legacy display", () => {
           title: "Test <event>",
         },
       ],
-      urgentShoppingCount: 1,
     });
 
     expect(html).toContain('<meta http-equiv="X-UA-Compatible" content="IE=edge">');
@@ -54,9 +52,7 @@ describe("legacy display", () => {
           severity: "due",
         },
       ],
-      shoppingCount: 0,
       timeline: [],
-      urgentShoppingCount: 0,
     };
 
     const publicHtml = renderLegacyDisplayPage(data);
@@ -68,6 +64,8 @@ describe("legacy display", () => {
     expect(enrolledHtml).toContain('name="proof"');
     expect(enrolledHtml).not.toContain("a".repeat(32));
     expect(enrolledHtml).not.toContain("<script");
+    expect(enrolledHtml.indexOf("Mark pill given")).toBeLessThan(enrolledHtml.indexOf("Schedule"));
+    expect(enrolledHtml).not.toContain("Shopping list");
   });
 
   it("enrolls a matching device without placing the secret in the cookie", async () => {

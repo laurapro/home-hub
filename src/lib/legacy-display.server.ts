@@ -31,11 +31,6 @@ type MealRow = {
   status: string | null;
 };
 
-type ShoppingRow = {
-  item_count: number | null;
-  urgent_count: number | null;
-};
-
 type PetRow = {
   entity_id: string | null;
   entity_type: string | null;
@@ -52,9 +47,7 @@ type LegacyDisplayData = {
   householdName: string;
   meals: MealRow[];
   pets: PetRow[];
-  shoppingCount: number;
   timeline: TimelineRow[];
-  urgentShoppingCount: number;
 };
 
 function pageHeaders(): Headers {
@@ -132,7 +125,6 @@ function shell(title: string, body: string, refresh = false): string {
     .calendar { background: #f4ead3; border-left-color: #e6bd6c; }
     .attention { background: #fae5dd; border-left-color: #e99579; }
     .meal { background: #e7f1e1; border-left-color: #91bd83; }
-    .shopping { background: #e1f1e4; border-left-color: #75b28a; }
     .pets { background: #e6edf8; border-left-color: #8aa9d4; }
     .title { font-size: 21px; font-weight: bold; }
     .meta { margin-top: 7px; color: #756b62; }
@@ -187,7 +179,7 @@ export function renderLegacyDisplayPage(
     "Nothing scheduled today.",
   );
   const attention = cards(
-    data.attention,
+    data.attention.filter((item) => item.domain !== "pets"),
     (item) =>
       `<div class="card attention"><div class="title">${escapeHtml(item.title || "Needs attention")}</div><div class="meta">${escapeHtml(item.human_action || item.domain || "")}${item.due_at ? ` &middot; ${escapeHtml(formatDateTime(item.due_at))}` : ""}</div></div>`,
     "Nothing needs you right now.",
@@ -198,27 +190,28 @@ export function renderLegacyDisplayPage(
       `<div class="card meal"><div class="title">${escapeHtml(item.recipe_name || item.notes || "Meal planned")}</div><div class="meta">${escapeHtml(item.meal_slot || "Meal")} &middot; ${escapeHtml(item.status || "planned")}</div></div>`,
     "No meals planned today.",
   );
-  const pets = cards(
-    data.pets,
-    (item) => {
-      const canMarkGiven = Boolean(
-        medicationActionSecret &&
-        item.entity_type === "pet_medication" &&
-        (item.severity === "critical" || item.severity === "due") &&
-        item.entity_id &&
-        item.scheduled_for,
-      );
-      const action = canMarkGiven
-        ? `<form method="post" action="/legacy-display">
+  const isMedicationDue = (item: PetRow) =>
+    item.entity_type === "pet_medication" &&
+    (item.severity === "critical" || item.severity === "due");
+  const renderPet = (item: PetRow) => {
+    const canMarkGiven = Boolean(
+      medicationActionSecret && item.entity_id && item.scheduled_for && isMedicationDue(item),
+    );
+    const action = canMarkGiven
+      ? `<form method="post" action="/legacy-display">
             <input type="hidden" name="action" value="give-medication">
             <input type="hidden" name="medication_id" value="${escapeHtml(item.entity_id)}">
             <input type="hidden" name="scheduled_for" value="${escapeHtml(item.scheduled_for)}">
             <input type="hidden" name="proof" value="${medicationActionProof(medicationActionSecret!, item.entity_id!, item.scheduled_for!)}">
             <button type="submit">&#10003; Mark pill given</button>
           </form>`
-        : "";
-      return `<div class="card pets"><div class="title">${escapeHtml(item.pet_name || "Pet")} ${item.medication_name ? `&mdash; ${escapeHtml(item.medication_name)}` : ""}</div><div class="meta">${escapeHtml(item.human_action || item.severity || "")}${item.due_at ? ` &middot; ${escapeHtml(formatDateTime(item.due_at))}` : ""}</div>${action}</div>`;
-    },
+      : "";
+    return `<div class="card pets"><div class="title">${escapeHtml(item.pet_name || "Pet")} ${item.medication_name ? `&mdash; ${escapeHtml(item.medication_name)}` : ""}</div><div class="meta">${escapeHtml(item.human_action || item.severity || "")}${item.due_at ? ` &middot; ${escapeHtml(formatDateTime(item.due_at))}` : ""}</div>${action}</div>`;
+  };
+  const medication = cards(data.pets.filter(isMedicationDue), renderPet, "No medication is due.");
+  const pets = cards(
+    data.pets.filter((item) => !isMedicationDue(item)),
+    renderPet,
     "Pets are all set.",
   );
 
@@ -226,10 +219,10 @@ export function renderLegacyDisplayPage(
     `${data.householdName} — Home Hub`,
     `<div class="wrap">
       <div class="header"><h1>Today at home</h1><div class="subtle">${escapeHtml(now)} &middot; Daily display</div>${notice ? `<div class="notice">${escapeHtml(notice)}</div>` : ""}</div>
+      <h2>Medication</h2>${medication}
       <h2>Schedule</h2>${schedule}
       <h2>Needs you</h2>${attention}
       <h2>Meals</h2>${meals}
-      <h2>Shopping</h2><div class="card shopping"><div class="title">Shopping list</div><div class="meta">${data.shoppingCount} item${data.shoppingCount === 1 ? "" : "s"}${data.urgentShoppingCount ? ` &middot; ${data.urgentShoppingCount} urgent` : ""}</div></div>
       <h2>Pets</h2>${pets}
     </div>`,
     true,
@@ -244,7 +237,7 @@ async function loadDisplayData(): Promise<LegacyDisplayData> {
     .single();
   if (householdError) throw householdError;
 
-  const [timeline, attention, meals, shopping, pets] = await Promise.all([
+  const [timeline, attention, meals, pets] = await Promise.all([
     supabaseAdmin
       .from("household_today_timeline")
       .select("title, starts_at, ends_at, all_day, location, item_type")
@@ -268,10 +261,6 @@ async function loadDisplayData(): Promise<LegacyDisplayData> {
       )
       .order("meal_slot"),
     supabaseAdmin
-      .from("household_shopping_summary")
-      .select("item_count, urgent_count")
-      .eq("household_id", household.id),
-    supabaseAdmin
       .from("pets_medication_attention_items")
       .select("pet_name, medication_name, human_action, due_at, severity, entity_id, entity_type")
       .eq("household_id", household.id)
@@ -280,13 +269,7 @@ async function loadDisplayData(): Promise<LegacyDisplayData> {
       .limit(8),
   ]);
 
-  const firstError = [
-    timeline.error,
-    attention.error,
-    meals.error,
-    shopping.error,
-    pets.error,
-  ].find(Boolean);
+  const firstError = [timeline.error, attention.error, meals.error, pets.error].find(Boolean);
   if (firstError) throw firstError;
 
   return {
@@ -303,11 +286,6 @@ async function loadDisplayData(): Promise<LegacyDisplayData> {
             )
           : null,
     })),
-    shoppingCount: (shopping.data ?? []).reduce((total, row) => total + (row.item_count ?? 0), 0),
-    urgentShoppingCount: (shopping.data ?? []).reduce(
-      (total, row) => total + (row.urgent_count ?? 0),
-      0,
-    ),
   };
 }
 
