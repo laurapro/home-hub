@@ -4,7 +4,30 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const ACTION_COOKIE_NAME = "home_hub_legacy_action";
 const ACTION_COOKIE_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;
-const REFRESH_SECONDS = 24 * 60 * 60;
+const RETRY_SECONDS = 5 * 60;
+
+function secondsUntilDailyRefresh(now = new Date()): number {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    hourCycle: "h23",
+  });
+  const parts = formatter.formatToParts(now);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)!.value);
+
+  for (const dayOffset of [0, 1]) {
+    // Noon UTC is 6 or 7 a.m. Central, safely after any DST transition.
+    const candidate = new Date(Date.UTC(value("year"), value("month") - 1, value("day") + dayOffset, 12));
+    const localHour = Number(formatter.formatToParts(candidate).find((part) => part.type === "hour")!.value);
+    const target = candidate.getTime() - (localHour - 6) * 60 * 60 * 1000;
+    if (target > now.getTime()) return Math.ceil((target - now.getTime()) / 1000);
+  }
+  throw new Error("Could not determine the next daily refresh");
+}
 
 type TimelineRow = {
   all_day: boolean | null;
@@ -103,13 +126,13 @@ function medicationActionProof(secret: string, medicationId: string, scheduledFo
     .digest("hex");
 }
 
-function shell(title: string, body: string, refresh = false): string {
+function shell(title: string, body: string, refreshSeconds?: number): string {
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  ${refresh ? `<meta http-equiv="refresh" content="${REFRESH_SECONDS}">` : ""}
+  ${refreshSeconds ? `<meta http-equiv="refresh" content="${refreshSeconds}; url=/legacy-display">` : ""}
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)}</title>
   <style>
@@ -225,7 +248,7 @@ export function renderLegacyDisplayPage(
       <h2>Meals</h2>${meals}
       <h2>Pets</h2>${pets}
     </div>`,
-    true,
+    secondsUntilDailyRefresh(),
   );
 }
 
@@ -391,6 +414,7 @@ export async function handleLegacyDisplay(request: Request): Promise<Response> {
       shell(
         "Display temporarily unavailable",
         '<div class="message"><h1>Temporarily unavailable</h1><p>The display could not load household data. It is safe to refresh and try again.</p></div>',
+        RETRY_SECONDS,
       ),
       {
         status: 503,

@@ -1,16 +1,19 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { handleLegacyDisplay, renderLegacyDisplayPage } from "./legacy-display.server";
 
 const originalActionToken = process.env["LEGACY_DISPLAY_ACTION_TOKEN"];
 
 afterEach(() => {
+  vi.useRealTimers();
   if (originalActionToken === undefined) delete process.env["LEGACY_DISPLAY_ACTION_TOKEN"];
   else process.env["LEGACY_DISPLAY_ACTION_TOKEN"] = originalActionToken;
 });
 
 describe("legacy display", () => {
   it("renders an IE-compatible page without a JavaScript bundle", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-12T10:00:00Z"));
     const html = renderLegacyDisplayPage({
       attention: [],
       householdName: "Laura & family",
@@ -29,10 +32,25 @@ describe("legacy display", () => {
     });
 
     expect(html).toContain('<meta http-equiv="X-UA-Compatible" content="IE=edge">');
-    expect(html).toContain('<meta http-equiv="refresh" content="86400">');
+    expect(html).toContain('<meta http-equiv="refresh" content="3600; url=/legacy-display">');
     expect(html).toContain("Laura &amp; family");
     expect(html).toContain("Test &lt;event&gt;");
     expect(html).not.toContain("<script");
+  });
+
+  it.each([
+    ["2026-09-12T11:00:00Z", 86400], // At 6 a.m., schedule tomorrow.
+    ["2026-09-12T12:00:00Z", 82800], // After 6 a.m.
+    ["2026-03-07T12:00:00Z", 82800], // Spring forward: 23-hour day.
+    ["2026-10-31T11:00:00Z", 90000], // Fall back: 25-hour day.
+    ["2026-12-31T13:00:00Z", 82800], // Year rollover.
+  ])("refreshes at the next 6 a.m. Central from %s", (now, seconds) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(now));
+    const html = renderLegacyDisplayPage({
+      attention: [], householdName: "Home", meals: [], pets: [], timeline: [],
+    });
+    expect(html).toContain(`<meta http-equiv="refresh" content="${seconds}; url=/legacy-display">`);
   });
 
   it("renders a signed no-JavaScript medication form only for an enrolled display", () => {
